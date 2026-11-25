@@ -1,7 +1,50 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "CoolrfulDARkness/moontlcp"
 
+import {
+  "CoolrfulDARkness/moontlcp/crypto/sm2",
+  "CoolrfulDARkness/moontlcp/crypto/sm4",
+  "CoolrfulDARkness/moontlcp/handshake",
+  "CoolrfulDARkness/moontlcp/state",
+  "CoolrfulDARkness/moontlcp/x509",
+}
+
 // Values
+pub fn default_cipher_suites() -> Array[@handshake.CipherSuite]
+
+pub fn generate_test_pki(Bytes) -> @x509.TestPki raise @x509.X509Error
+
+pub fn hmac_sm3(Bytes, Bytes) -> Bytes
+
+pub fn new_client(@state.ClientConfig) -> @state.ClientConn
+
+pub fn new_server(@state.ServerConfig) -> @state.ServerConn
+
+pub fn new_session_store() -> @state.SessionStore
+
+pub fn parse_cert_der(Bytes) -> @x509.Certificate raise @x509.X509Error
+
+pub fn parse_certs_pem(String) -> Array[@x509.Certificate] raise @x509.X509Error
+
+pub fn run_handshake_loop(@state.ClientConn, @state.ServerConn) -> (Int32, Int32) raise @state.StateError
+
+pub fn sm2_decrypt_asn1(@sm2.PrivateKey, Bytes) -> Bytes raise @sm2.Sm2Error
+
+pub fn sm2_encrypt_asn1(@sm2.PublicKey, Bytes, Bytes) -> Bytes raise @sm2.Sm2Error
+
+pub fn sm2_sign_der(@sm2.PrivateKey, Bytes, Bytes) -> Bytes raise @sm2.Sm2Error
+
+pub fn sm2_verify_der(@sm2.PublicKey, Bytes, Bytes, Bytes) -> Bool
+
+pub fn sm3_hash(Bytes) -> Bytes
+
+pub fn sm4_gcm_decrypt(Bytes, Bytes, Bytes, Bytes, Bytes) -> Bytes raise @sm4.Sm4Error
+
+pub fn sm4_gcm_encrypt(Bytes, Bytes, Bytes, Bytes) -> (Bytes, Bytes) raise @sm4.Sm4Error
+
+pub fn tlcp_prf(Bytes, Bytes, Bytes, Int32) -> Bytes
+
+pub fn verify_dual_certs(Array[Bytes], Array[@x509.Certificate]) -> @x509.DualCertBundle raise @x509.X509Error
 
 // Errors
 
