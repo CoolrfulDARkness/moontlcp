@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/crypto/sm4"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const SM4_BLOCK_SIZE : Int32 = 16
+
+pub const SM4_GCM_TAG_SIZE : Int32 = 16
+
+pub const SM4_KEY_SIZE : Int32 = 16
+
+// Errors
+#derive(Eq, @debug.Debug)
+pub suberror Sm4Error {
+  InvalidKeyLength(Int32)
+  InvalidIvLength(Int32)
+  InvalidBlockLength(Int32)
+  InvalidPadding
+  AuthFailed
+}
+
+// Types and methods
+pub struct Sm4Key {
+  rk : FixedArray[UInt32]
+}
+pub fn Sm4Key::cbc_decrypt_pkcs7(Self, Bytes, Bytes) -> Bytes raise Sm4Error
+pub fn Sm4Key::cbc_decrypt_raw(Self, Bytes, Bytes) -> Bytes raise Sm4Error
+pub fn Sm4Key::cbc_encrypt_pkcs7(Self, Bytes, Bytes) -> Bytes raise Sm4Error
+pub fn Sm4Key::cbc_encrypt_raw(Self, Bytes, Bytes) -> Bytes raise Sm4Error
+pub fn Sm4Key::ctr_crypt(Self, Bytes, Bytes) -> Bytes raise Sm4Error
+pub fn Sm4Key::decrypt_block(Self, Bytes) -> Bytes raise Sm4Error
+pub fn Sm4Key::decrypt_block_inplace(Self, FixedArray[Byte], Int32) -> Unit
+pub fn Sm4Key::encrypt_block(Self, Bytes) -> Bytes raise Sm4Error
+pub fn Sm4Key::encrypt_block_inplace(Self, FixedArray[Byte], Int32) -> Unit
+pub fn Sm4Key::gcm_decrypt(Self, Bytes, Bytes, Bytes, Bytes) -> Bytes raise Sm4Error
+pub fn Sm4Key::gcm_encrypt(Self, Bytes, Bytes, Bytes) -> (Bytes, Bytes) raise Sm4Error
+pub fn Sm4Key::new(Bytes) -> Self raise Sm4Error
+
+// Type aliases
+
+// Traits

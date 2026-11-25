@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/crypto/ct"
+
+// Values
+pub fn ct_eq(Bytes, Bytes) -> Bool
+
+pub fn ct_eq_u32(UInt32, UInt32) -> UInt32
+
+pub fn ct_eq_view(BytesView, BytesView) -> Bool
+
+pub fn ct_is_zero_u32(UInt32) -> UInt32
+
+pub fn ct_lt_u32(UInt32, UInt32) -> UInt32
+
+pub fn ct_select_byte(UInt32, Byte, Byte) -> Byte
+
+pub fn ct_select_u32(UInt32, UInt32, UInt32) -> UInt32
+
+pub fn zeroize(FixedArray[Byte]) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -2,13 +2,13 @@
 /// GB/T 32907-2016 SM4 Block Cipher with CBC, CTR, and RFC 8998 / GM/T 0024-2023 GCM AEAD.
 
 ///|
-pub const SM4_KEY_SIZE : Int = 16
+pub const SM4_KEY_SIZE : Int32 = 16
 
 ///|
-pub const SM4_BLOCK_SIZE : Int = 16
+pub const SM4_BLOCK_SIZE : Int32 = 16
 
 ///|
-pub const SM4_GCM_TAG_SIZE : Int = 16
+pub const SM4_GCM_TAG_SIZE : Int32 = 16
 
 ///|
 let sbox : FixedArray[Byte] = [
@@ -44,7 +44,7 @@ let sbox : FixedArray[Byte] = [
 ]
 
 ///|
-let ck : FixedArray[UInt] = [
+let ck : FixedArray[UInt32] = [
   0x00070E15U, 0x1C232A31U, 0x383F464DU, 0x545B6269U, 0x70777E85U, 0x8C939AA1U, 0xA8AFB6BDU,
   0xC4CBD2D9U, 0xE0E7EEF5U, 0xFC030A11U, 0x181F262DU, 0x343B4249U, 0x50575E65U, 0x6C737A81U,
   0x888F969DU, 0xA4ABB2B9U, 0xC0C7CED5U, 0xDCE3EAF1U, 0xF8FF060DU, 0x141B2229U, 0x30373E45U,
@@ -53,12 +53,12 @@ let ck : FixedArray[UInt] = [
 ]
 
 ///|
-fn rotl32(x : UInt, n : Int) -> UInt {
+fn rotl32(x : UInt32, n : Int32) -> UInt32 {
   (x << n) | (x >> (32 - n))
 }
 
 ///|
-fn tau(a : UInt) -> UInt {
+fn tau(a : UInt32) -> UInt32 {
   let b0 = sbox[((a >> 24) & 0xFFU).reinterpret_as_int()].to_uint()
   let b1 = sbox[((a >> 16) & 0xFFU).reinterpret_as_int()].to_uint()
   let b2 = sbox[((a >> 8) & 0xFFU).reinterpret_as_int()].to_uint()
@@ -67,19 +67,19 @@ fn tau(a : UInt) -> UInt {
 }
 
 ///|
-fn t_enc(x : UInt) -> UInt {
+fn t_enc(x : UInt32) -> UInt32 {
   let b = tau(x)
   b ^ rotl32(b, 2) ^ rotl32(b, 10) ^ rotl32(b, 18) ^ rotl32(b, 24)
 }
 
 ///|
-fn t_key(x : UInt) -> UInt {
+fn t_key(x : UInt32) -> UInt32 {
   let b = tau(x)
   b ^ rotl32(b, 13) ^ rotl32(b, 23)
 }
 
 ///|
-fn read_be32_bytes(b : Bytes, off : Int) -> UInt {
+fn read_be32_bytes(b : Bytes, off : Int32) -> UInt32 {
   (b[off].to_uint() << 24) |
   (b[off + 1].to_uint() << 16) |
   (b[off + 2].to_uint() << 8) |
@@ -87,7 +87,7 @@ fn read_be32_bytes(b : Bytes, off : Int) -> UInt {
 }
 
 ///|
-fn read_be32_arr(b : FixedArray[Byte], off : Int) -> UInt {
+fn read_be32_arr(b : FixedArray[Byte], off : Int32) -> UInt32 {
   (b[off].to_uint() << 24) |
   (b[off + 1].to_uint() << 16) |
   (b[off + 2].to_uint() << 8) |
@@ -95,7 +95,7 @@ fn read_be32_arr(b : FixedArray[Byte], off : Int) -> UInt {
 }
 
 ///|
-fn write_be32_arr(b : FixedArray[Byte], off : Int, v : UInt) -> Unit {
+fn write_be32_arr(b : FixedArray[Byte], off : Int32, v : UInt32) -> Unit {
   b[off] = ((v >> 24) & 0xFFU).to_byte()
   b[off + 1] = ((v >> 16) & 0xFFU).to_byte()
   b[off + 2] = ((v >> 8) & 0xFFU).to_byte()
@@ -105,9 +105,9 @@ fn write_be32_arr(b : FixedArray[Byte], off : Int, v : UInt) -> Unit {
 ///|
 #derive(Debug, Eq)
 pub suberror Sm4Error {
-  InvalidKeyLength(Int)
-  InvalidIvLength(Int)
-  InvalidBlockLength(Int)
+  InvalidKeyLength(Int32)
+  InvalidIvLength(Int32)
+  InvalidBlockLength(Int32)
   InvalidPadding
   AuthFailed
 }
@@ -115,7 +115,7 @@ pub suberror Sm4Error {
 ///|
 /// Expanded SM4 round keys (32 rounds).
 pub struct Sm4Key {
-  rk : FixedArray[UInt]
+  rk : FixedArray[UInt32]
 }
 
 ///|
@@ -149,7 +149,7 @@ pub fn Sm4Key::new(key : Bytes) -> Sm4Key raise Sm4Error {
 pub fn Sm4Key::encrypt_block_inplace(
   self : Sm4Key,
   buf : FixedArray[Byte],
-  off : Int,
+  off : Int32,
 ) -> Unit {
   let mut x0 = read_be32_arr(buf, off)
   let mut x1 = read_be32_arr(buf, off + 4)
@@ -173,7 +173,7 @@ pub fn Sm4Key::encrypt_block_inplace(
 pub fn Sm4Key::decrypt_block_inplace(
   self : Sm4Key,
   buf : FixedArray[Byte],
-  off : Int,
+  off : Int32,
 ) -> Unit {
   let mut x0 = read_be32_arr(buf, off)
   let mut x1 = read_be32_arr(buf, off + 4)
@@ -329,7 +329,7 @@ pub fn Sm4Key::cbc_decrypt_pkcs7(
     let b = dec[n - 1 - i].to_uint()
     let byte_ok = @ct.ct_eq_u32(b, pad_len)
     // If in_pad == 1, require byte_ok == 1
-    good = good & (@ct.ct_select_u32(in_pad, byte_ok, 1U))
+    good = good & @ct.ct_select_u32(in_pad, byte_ok, 1U)
   }
   if good == 0U {
     raise InvalidPadding
@@ -383,7 +383,12 @@ pub fn Sm4Key::ctr_crypt(
 ///|
 /// GF(2^128) multiplication for GCM GHASH: X * Y mod (x^128 + x^7 + x^2 + x + 1).
 /// Uses NIST SP 800-38D bit reflection convention (bit 0 is MSB of byte 0).
-fn ghash_mul(x_hi : UInt64, x_lo : UInt64, y_hi : UInt64, y_lo : UInt64) -> (UInt64, UInt64) {
+fn ghash_mul(
+  x_hi : UInt64,
+  x_lo : UInt64,
+  y_hi : UInt64,
+  y_lo : UInt64,
+) -> (UInt64, UInt64) {
   let mut z_hi : UInt64 = 0UL
   let mut z_lo : UInt64 = 0UL
   let mut v_hi = y_hi
@@ -408,7 +413,7 @@ fn ghash_mul(x_hi : UInt64, x_lo : UInt64, y_hi : UInt64, y_lo : UInt64) -> (UIn
 }
 
 ///|
-fn read_be64_arr(b : FixedArray[Byte], off : Int) -> UInt64 {
+fn read_be64_arr(b : FixedArray[Byte], off : Int32) -> UInt64 {
   (b[off].to_uint64() << 56) |
   (b[off + 1].to_uint64() << 48) |
   (b[off + 2].to_uint64() << 40) |
@@ -420,7 +425,7 @@ fn read_be64_arr(b : FixedArray[Byte], off : Int) -> UInt64 {
 }
 
 ///|
-fn write_be64_arr(b : FixedArray[Byte], off : Int, v : UInt64) -> Unit {
+fn write_be64_arr(b : FixedArray[Byte], off : Int32, v : UInt64) -> Unit {
   b[off] = ((v >> 56) & 0xFFUL).to_byte()
   b[off + 1] = ((v >> 48) & 0xFFUL).to_byte()
   b[off + 2] = ((v >> 40) & 0xFFUL).to_byte()
@@ -493,11 +498,7 @@ fn Sm4Key::gcm_j0(
 }
 
 ///|
-fn Sm4Key::gctr(
-  self : Sm4Key,
-  icb : FixedArray[Byte],
-  data : Bytes,
-) -> Bytes {
+fn Sm4Key::gctr(self : Sm4Key, icb : FixedArray[Byte], data : Bytes) -> Bytes {
   let ctr = FixedArray::make(16, b'\x00')
   for i = 0; i < 16; i = i + 1 {
     ctr[i] = icb[i]

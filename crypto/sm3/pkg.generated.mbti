@@ -1,0 +1,38 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/crypto/sm3"
+
+// Values
+pub const SM3_BLOCK_SIZE : Int32 = 64
+
+pub const SM3_DIGEST_SIZE : Int32 = 32
+
+pub fn hmac_sm3(Bytes, Bytes) -> Bytes
+
+pub fn hmac_sm3_parts(Bytes, Array[BytesView]) -> Bytes
+
+pub fn kdf_sm3(Bytes, Int32) -> Bytes
+
+pub fn sm3(Bytes) -> Bytes
+
+pub fn sm3_view(BytesView) -> Bytes
+
+pub fn tlcp_prf(Bytes, Bytes, Bytes, Int32) -> Bytes
+
+// Errors
+
+// Types and methods
+pub struct Sm3 {
+  state : FixedArray[UInt32]
+  block : FixedArray[Byte]
+  mut block_len : Int32
+  mut total_len : UInt64
+}
+pub fn Sm3::clone(Self) -> Self
+pub fn Sm3::finalize(Self) -> Bytes
+pub fn Sm3::new() -> Self
+pub fn Sm3::update(Self, Bytes) -> Unit
+pub fn Sm3::update_view(Self, BytesView) -> Unit
+
+// Type aliases
+
+// Traits

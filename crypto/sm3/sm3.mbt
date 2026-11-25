@@ -4,13 +4,13 @@
 /// and GB/T 32918.4 SM2 KDF.
 
 ///|
-pub const SM3_DIGEST_SIZE : Int = 32
+pub const SM3_DIGEST_SIZE : Int32 = 32
 
 ///|
-pub const SM3_BLOCK_SIZE : Int = 64
+pub const SM3_BLOCK_SIZE : Int32 = 64
 
 ///|
-fn rotl32(x : UInt, n : Int) -> UInt {
+fn rotl32(x : UInt32, n : Int32) -> UInt32 {
   let k = n & 31
   if k == 0 {
     x
@@ -20,17 +20,17 @@ fn rotl32(x : UInt, n : Int) -> UInt {
 }
 
 ///|
-fn p0(x : UInt) -> UInt {
+fn p0(x : UInt32) -> UInt32 {
   x ^ rotl32(x, 9) ^ rotl32(x, 17)
 }
 
 ///|
-fn p1(x : UInt) -> UInt {
+fn p1(x : UInt32) -> UInt32 {
   x ^ rotl32(x, 15) ^ rotl32(x, 23)
 }
 
 ///|
-fn ff(x : UInt, y : UInt, z : UInt, j : Int) -> UInt {
+fn ff(x : UInt32, y : UInt32, z : UInt32, j : Int32) -> UInt32 {
   if j < 16 {
     x ^ y ^ z
   } else {
@@ -39,7 +39,7 @@ fn ff(x : UInt, y : UInt, z : UInt, j : Int) -> UInt {
 }
 
 ///|
-fn gg(x : UInt, y : UInt, z : UInt, j : Int) -> UInt {
+fn gg(x : UInt32, y : UInt32, z : UInt32, j : Int32) -> UInt32 {
   if j < 16 {
     x ^ y ^ z
   } else {
@@ -48,7 +48,7 @@ fn gg(x : UInt, y : UInt, z : UInt, j : Int) -> UInt {
 }
 
 ///|
-fn read_be32_arr(buf : FixedArray[Byte], off : Int) -> UInt {
+fn read_be32_arr(buf : FixedArray[Byte], off : Int32) -> UInt32 {
   (buf[off].to_uint() << 24) |
   (buf[off + 1].to_uint() << 16) |
   (buf[off + 2].to_uint() << 8) |
@@ -56,7 +56,7 @@ fn read_be32_arr(buf : FixedArray[Byte], off : Int) -> UInt {
 }
 
 ///|
-fn write_be32_arr(buf : FixedArray[Byte], off : Int, v : UInt) -> Unit {
+fn write_be32_arr(buf : FixedArray[Byte], off : Int32, v : UInt32) -> Unit {
   buf[off] = ((v >> 24) & 0xFFU).to_byte()
   buf[off + 1] = ((v >> 16) & 0xFFU).to_byte()
   buf[off + 2] = ((v >> 8) & 0xFFU).to_byte()
@@ -66,9 +66,9 @@ fn write_be32_arr(buf : FixedArray[Byte], off : Int, v : UInt) -> Unit {
 ///|
 /// Streaming SM3 hash state.
 pub struct Sm3 {
-  state : FixedArray[UInt]
+  state : FixedArray[UInt32]
   block : FixedArray[Byte]
-  mut block_len : Int
+  mut block_len : Int32
   mut total_len : UInt64
 }
 
@@ -97,7 +97,7 @@ pub fn Sm3::clone(self : Sm3) -> Sm3 {
   for i = 0; i < 64; i = i + 1 {
     block[i] = self.block[i]
   }
-  { state, block, block_len: self.block_len, total_len: self.total_len }
+  { state, block, block_len: self.block_len, total_len: self.total_len, }
 }
 
 ///|
@@ -275,7 +275,7 @@ pub fn tlcp_prf(
   secret : Bytes,
   label : Bytes,
   seed : Bytes,
-  out_len : Int,
+  out_len : Int32,
 ) -> Bytes {
   if out_len <= 0 {
     return b""
@@ -311,14 +311,14 @@ pub fn tlcp_prf(
 
 ///|
 /// GB/T 32918.4 SM2 Key Derivation Function (KDF) using SM3.
-pub fn kdf_sm3(z : Bytes, klen : Int) -> Bytes {
+pub fn kdf_sm3(z : Bytes, klen : Int32) -> Bytes {
   if klen <= 0 {
     return b""
   }
   let out = FixedArray::make(klen, b'\x00')
   let ct_buf = FixedArray::make(4, b'\x00')
   let mut written = 0
-  let mut ct : UInt = 1U
+  let mut ct : UInt32 = 1U
   while written < klen {
     write_be32_arr(ct_buf, 0, ct)
     let h = Sm3::new()

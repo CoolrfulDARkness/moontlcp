@@ -1,10 +1,10 @@
-name = "alienation/moontlcp"
+name = "CoolrfulDARkness/moontlcp"
 
 version = "0.1.0"
 
 readme = "README.mbt.md"
 
-repository = ""
+repository = "https://github.com/CoolrfulDARkness/moontlcp"
 
 license = "Apache-2.0"
 

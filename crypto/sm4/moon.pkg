@@ -1,3 +1,3 @@
 import {
-  "alienation/moontlcp/crypto/ct" @ct,
+  "CoolrfulDARkness/moontlcp/crypto/ct",
 }

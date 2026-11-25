@@ -2,7 +2,7 @@
 fn from_hex(s : String) -> Bytes {
   let n = s.length() / 2
   let out = FixedArray::make(n, b'\x00')
-  fn nibble(c : Int) -> Int {
+  fn nibble(c : Int32) -> Int32 {
     if c >= 48 && c <= 57 {
       c - 48
     } else if c >= 97 && c <= 102 {
@@ -84,7 +84,8 @@ test "SM4-CBC PKCS#7 round-trip and bad padding rejection" {
   let key = from_hex("0123456789abcdeffedcba9876543210")
   let iv = from_hex("000102030405060708090a0b0c0d0e0f")
   let sm4 = @sm4.Sm4Key::new(key)
-  for msg in [b"", b"A", b"0123456789abcdef", b"GM/T 0024 TLCP 1.1 test payload!"] {
+  for
+    msg in [b"", b"A", b"0123456789abcdef", b"GM/T 0024 TLCP 1.1 test payload!"] {
     let ct = sm4.cbc_encrypt_pkcs7(iv, msg)
     let pt = sm4.cbc_decrypt_pkcs7(iv, ct)
     assert_eq(pt, msg)
