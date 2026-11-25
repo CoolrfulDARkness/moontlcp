@@ -1,0 +1,80 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/record"
+
+import {
+  "CoolrfulDARkness/moontlcp/crypto/sm4",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const MAX_CIPHERTEXT_LEN : Int32 = 18432
+
+pub const MAX_PLAINTEXT_LEN : Int32 = 16384
+
+pub const RECORD_HEADER_LEN : Int32 = 5
+
+pub const TLCP_VERSION_MAJOR : Byte = b'\x01'
+
+pub const TLCP_VERSION_MINOR : Byte = b'\x01'
+
+pub const TLCP_VERSION_U16 : UInt32 = 0x0101
+
+pub fn decode_record(BytesView) -> (RawRecord, Int32) raise RecordError
+
+pub fn encode_record(RawRecord) -> Bytes raise RecordError
+
+pub fn fragment_plaintext(ContentType, Bytes) -> Array[RawRecord]
+
+// Errors
+#derive(Eq, @debug.Debug)
+pub suberror RecordError {
+  Incomplete
+  InvalidContentType(Byte)
+  UnsupportedVersion(Byte, Byte)
+  RecordOverflow(Int32)
+  BadRecordMac
+  SequenceOverflow
+  CryptoError(String)
+}
+
+// Types and methods
+pub enum CipherState {
+  Null
+  Sm4CbcHmacSm3(@sm4.Sm4Key, Bytes)
+  Sm4Gcm(@sm4.Sm4Key, Bytes)
+}
+pub fn CipherState::new_cbc(Bytes, Bytes) -> Self raise RecordError
+pub fn CipherState::new_gcm(Bytes, Bytes) -> Self raise RecordError
+pub fn CipherState::null() -> Self
+
+#derive(Eq, @debug.Debug)
+pub(all) enum ContentType {
+  ChangeCipherSpec
+  Alert
+  Handshake
+  ApplicationData
+}
+pub fn ContentType::from_byte(Byte) -> Self raise RecordError
+pub fn ContentType::to_byte(Self) -> Byte
+
+#derive(Eq, @debug.Debug)
+pub(all) struct RawRecord {
+  content_type : ContentType
+  version_major : Byte
+  version_minor : Byte
+  payload : Bytes
+}
+
+pub struct RecordLayer {
+  mut cipher : CipherState
+  mut seq : UInt64
+}
+pub fn RecordLayer::new() -> Self
+pub fn RecordLayer::open(Self, RawRecord) -> Bytes raise RecordError
+pub fn RecordLayer::seal(Self, ContentType, Bytes, Bytes) -> Bytes raise RecordError
+pub fn RecordLayer::seq_num(Self) -> UInt64
+pub fn RecordLayer::set_cipher(Self, CipherState) -> Unit
+
+// Type aliases
+
+// Traits
