@@ -1,0 +1,5 @@
+// import {
+//   "alienation/moontlcp" @lib,
+// }
+
+pkgtype(kind: "executable")
