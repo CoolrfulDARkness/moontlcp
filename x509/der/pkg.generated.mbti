@@ -1,0 +1,128 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/x509/der"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const OID_AUTHORITY_KEY_ID : String = "2.5.29.35"
+
+pub const OID_BASIC_CONSTRAINTS : String = "2.5.29.19"
+
+pub const OID_COMMON_NAME : String = "2.5.4.3"
+
+pub const OID_COUNTRY : String = "2.5.4.6"
+
+pub const OID_EC_PUBLIC_KEY : String = "1.2.840.10045.2.1"
+
+pub const OID_EXT_KEY_USAGE : String = "2.5.29.37"
+
+pub const OID_KEY_USAGE : String = "2.5.29.15"
+
+pub const OID_ORGANIZATION : String = "2.5.4.10"
+
+pub const OID_SM2_CURVE : String = "1.2.156.10197.1.301"
+
+pub const OID_SM2_SIGN_SM3 : String = "1.2.156.10197.1.501"
+
+pub const OID_SM3 : String = "1.2.156.10197.1.401"
+
+pub const OID_SUBJECT_KEY_ID : String = "2.5.29.14"
+
+pub const TAG_BIT_STRING : Byte = b'\x03'
+
+pub const TAG_BOOLEAN : Byte = b'\x01'
+
+pub const TAG_GENERALIZED_TIME : Byte = b'\x18'
+
+pub const TAG_IA5_STRING : Byte = b'\x16'
+
+pub const TAG_INTEGER : Byte = b'\x02'
+
+pub const TAG_NULL : Byte = b'\x05'
+
+pub const TAG_OCTET_STRING : Byte = b'\x04'
+
+pub const TAG_OID : Byte = b'\x06'
+
+pub const TAG_PRINTABLE_STRING : Byte = b'\x13'
+
+pub const TAG_SEQUENCE : Byte = b'\x30'
+
+pub const TAG_SET : Byte = b'\x31'
+
+pub const TAG_UTC_TIME : Byte = b'\x17'
+
+pub const TAG_UTF8_STRING : Byte = b'\x0c'
+
+pub fn pem_decode_all(String) -> Array[PemBlock] raise DerError
+
+pub fn pem_encode(String, Bytes) -> String
+
+// Errors
+#derive(Eq, @debug.Debug)
+pub suberror DerError {
+  UnexpectedEof
+  InvalidTag(Byte)
+  NonCanonicalLength
+  IndefiniteLengthNotAllowed
+  LengthOverflow
+  TrailingData
+  InvalidInteger
+  InvalidBitString
+  InvalidOid
+  InvalidPem(String)
+}
+
+// Types and methods
+pub struct DerReader {
+  // private fields
+}
+pub fn DerReader::expect_end(Self) -> Unit raise DerError
+pub fn DerReader::expect_tag(Self, Byte) -> BytesView raise DerError
+pub fn DerReader::is_empty(Self) -> Bool
+pub fn DerReader::new(BytesView) -> Self
+pub fn DerReader::peek_tag(Self) -> Byte?
+pub fn DerReader::read_bit_string(Self) -> (BytesView, Int32) raise DerError
+pub fn DerReader::read_boolean(Self) -> Bool raise DerError
+pub fn DerReader::read_int_u64(Self) -> UInt64 raise DerError
+pub fn DerReader::read_null(Self) -> Unit raise DerError
+pub fn DerReader::read_octet_string(Self) -> BytesView raise DerError
+pub fn DerReader::read_oid(Self) -> String raise DerError
+pub fn DerReader::read_optional_context(Self, Int32) -> BytesView? raise DerError
+pub fn DerReader::read_string(Self) -> String raise DerError
+pub fn DerReader::read_tlv(Self) -> (Byte, BytesView) raise DerError
+pub fn DerReader::read_tlv_with_raw(Self) -> (Byte, BytesView, BytesView) raise DerError
+pub fn DerReader::read_uint_bytes(Self) -> BytesView raise DerError
+pub fn DerReader::remaining(Self) -> Int32
+
+pub struct DerWriter {
+  // private fields
+}
+pub fn DerWriter::new() -> Self
+pub fn DerWriter::to_bytes(Self) -> Bytes
+pub fn DerWriter::write_bit_string(Self, BytesView, unused_bits? : Int32) -> Unit raise DerError
+pub fn DerWriter::write_boolean(Self, Bool) -> Unit
+pub fn DerWriter::write_context_explicit(Self, Int32, (Self) -> Unit raise DerError) -> Unit raise DerError
+pub fn DerWriter::write_int_u64(Self, UInt64) -> Unit
+pub fn DerWriter::write_null(Self) -> Unit
+pub fn DerWriter::write_octet_string(Self, BytesView) -> Unit
+pub fn DerWriter::write_oid(Self, String) -> Unit raise DerError
+pub fn DerWriter::write_printable_string(Self, String) -> Unit raise DerError
+pub fn DerWriter::write_sequence(Self, (Self) -> Unit raise?) -> Unit raise?
+pub fn DerWriter::write_set(Self, (Self) -> Unit raise?) -> Unit raise?
+pub fn DerWriter::write_tlv(Self, Byte, BytesView) -> Unit
+pub fn DerWriter::write_uint_bytes(Self, BytesView) -> Unit
+pub fn DerWriter::write_utc_time(Self, String) -> Unit raise DerError
+pub fn DerWriter::write_utf8_string(Self, String) -> Unit
+
+#derive(Eq, @debug.Debug)
+pub(all) struct PemBlock {
+  label : String
+  data : Bytes
+}
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,96 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/x509"
+
+import {
+  "CoolrfulDARkness/moontlcp/crypto/sm2",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn build_sm2_cert(CertSpec, @sm2.PublicKey, @sm2.PrivateKey) -> Certificate raise X509Error
+
+pub fn generate_test_pki(Bytes) -> TestPki raise X509Error
+
+pub fn parse_and_verify_dual_certs(Array[Bytes], Array[Certificate]) -> DualCertBundle raise X509Error
+
+// Errors
+#derive(Eq, @debug.Debug)
+pub suberror X509Error {
+  DerError(String)
+  UnsupportedVersion
+  UnsupportedAlgorithm(String)
+  InvalidPublicKey
+  InvalidSignature
+  NotCa
+  BadKeyUsage(String)
+  ChainVerificationFailed(String)
+  DualCertMismatch(String)
+  InvalidCertCount(Int32)
+}
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub(all) struct CertSpec {
+  serial : UInt64
+  subject_cn : String
+  issuer_cn : String
+  not_before : String
+  not_after : String
+  is_ca : Bool
+  key_usage : KeyUsage
+}
+
+#derive(Eq, @debug.Debug)
+pub struct Certificate {
+  raw_der : Bytes
+  tbs_der : Bytes
+  serial : Bytes
+  signature_oid : String
+  issuer_cn : String
+  subject_cn : String
+  not_before : String
+  not_after : String
+  public_key : @sm2.PublicKey
+  is_ca : Bool
+  key_usage : KeyUsage?
+  signature_der : Bytes
+}
+pub fn Certificate::from_der(Bytes) -> Self raise X509Error
+pub fn Certificate::from_pem(String) -> Array[Self] raise X509Error
+pub fn Certificate::to_pem(Self) -> String
+pub fn Certificate::verify_issued_by(Self, Self) -> Unit raise X509Error
+
+#derive(Eq, @debug.Debug)
+pub struct DualCertBundle {
+  sign_cert : Certificate
+  enc_cert : Certificate
+  intermediates : Array[Certificate]
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) struct KeyUsage {
+  digital_signature : Bool
+  content_commitment : Bool
+  key_encipherment : Bool
+  data_encipherment : Bool
+  key_agreement : Bool
+  key_cert_sign : Bool
+  crl_sign : Bool
+}
+
+pub struct TestPki {
+  ca_priv : @sm2.PrivateKey
+  ca_cert : Certificate
+  server_sign_priv : @sm2.PrivateKey
+  server_sign_cert : Certificate
+  server_enc_priv : @sm2.PrivateKey
+  server_enc_cert : Certificate
+  client_sign_priv : @sm2.PrivateKey
+  client_sign_cert : Certificate
+  client_enc_priv : @sm2.PrivateKey
+  client_enc_cert : Certificate
+}
+
+// Type aliases
+
+// Traits
