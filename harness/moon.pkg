@@ -1,0 +1,6 @@
+import {
+  "CoolrfulDARkness/moontlcp/crypto/sm2",
+  "CoolrfulDARkness/moontlcp/crypto/sm3",
+  "CoolrfulDARkness/moontlcp/crypto/sm4",
+  "CoolrfulDARkness/moontlcp/x509",
+} for "test"

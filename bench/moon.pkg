@@ -1,0 +1,8 @@
+import {
+  "CoolrfulDARkness/moontlcp/crypto/sm2",
+  "CoolrfulDARkness/moontlcp/crypto/sm3",
+  "CoolrfulDARkness/moontlcp/crypto/sm4",
+  "CoolrfulDARkness/moontlcp/record",
+  "CoolrfulDARkness/moontlcp/x509",
+  "moonbitlang/core/bench",
+} for "wbtest"
