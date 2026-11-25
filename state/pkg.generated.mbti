@@ -1,0 +1,157 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/state"
+
+import {
+  "CoolrfulDARkness/moontlcp/crypto/sm2",
+  "CoolrfulDARkness/moontlcp/handshake",
+  "CoolrfulDARkness/moontlcp/record",
+  "CoolrfulDARkness/moontlcp/x509",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn default_cipher_suites() -> Array[@handshake.CipherSuite]
+
+// Errors
+#derive(Eq, @debug.Debug)
+pub suberror StateError {
+  ProtocolError(@handshake.AlertDescription, String)
+  RecordError(String)
+  CertificateError(String)
+  CryptoError(String)
+  InvalidState(String)
+}
+
+// Types and methods
+pub(all) struct ClientConfig {
+  trust_anchors : Array[@x509.Certificate]
+  cipher_suites : Array[@handshake.CipherSuite]
+  client_certs : (@x509.Certificate, @sm2.PrivateKey, @x509.Certificate, @sm2.PrivateKey)?
+  resume_session : ResumedSession?
+  seed : Bytes
+}
+pub fn ClientConfig::new(Array[@x509.Certificate], Bytes) -> Self
+
+pub struct ClientConn {
+  config : ClientConfig
+  prng : Prng
+  mut state : ClientState
+  read_layer : @record.RecordLayer
+  write_layer : @record.RecordLayer
+  mut write_encrypted : Bool
+  inbound : Array[Byte]
+  hs_buf : Array[Byte]
+  outbound : Array[Byte]
+  transcript : @handshake.Transcript
+  mut client_random : Bytes
+  mut server_random : Bytes
+  mut session_id : Bytes
+  mut suite : @handshake.CipherSuite?
+  mut peer_bundle : @x509.DualCertBundle?
+  mut server_eph_pub : @sm2.PublicKey?
+  mut cert_requested : Bool
+  mut master_secret : Bytes
+  mut key_block : @handshake.KeyBlock?
+  mut resumed : Bool
+  mut local_closed : Bool
+  mut peer_closed : Bool
+}
+pub fn ClientConn::close_notify(Self) -> Bytes raise StateError
+pub fn ClientConn::export_session(Self) -> ResumedSession?
+pub fn ClientConn::feed(Self, BytesView) -> Array[Event] raise StateError
+pub fn ClientConn::is_established(Self) -> Bool
+pub fn ClientConn::is_failed(Self) -> Bool
+pub fn ClientConn::is_resumed(Self) -> Bool
+pub fn ClientConn::negotiated_suite(Self) -> @handshake.CipherSuite?
+pub fn ClientConn::new(ClientConfig) -> Self
+pub fn ClientConn::peer_certs(Self) -> @x509.DualCertBundle?
+pub fn ClientConn::session_id(Self) -> Bytes
+pub fn ClientConn::start_handshake(Self) -> Bytes raise StateError
+pub fn ClientConn::take_outbound(Self) -> Bytes
+pub fn ClientConn::write_app_data(Self, Bytes) -> Bytes raise StateError
+
+#derive(Eq)
+type ClientState
+
+#derive(Eq, @debug.Debug)
+pub(all) enum Event {
+  HandshakeComplete
+  ApplicationData(Bytes)
+  PeerClosed
+  WarningAlert(@handshake.AlertDescription)
+}
+
+type Prng
+
+#derive(Eq, @debug.Debug)
+pub(all) struct ResumedSession {
+  session_id : Bytes
+  cipher_suite : @handshake.CipherSuite
+  master_secret : Bytes
+}
+
+pub(all) struct ServerConfig {
+  sign_cert : @x509.Certificate
+  sign_priv : @sm2.PrivateKey
+  enc_cert : @x509.Certificate
+  enc_priv : @sm2.PrivateKey
+  cipher_suites : Array[@handshake.CipherSuite]
+  require_client_cert : Bool
+  client_trust_anchors : Array[@x509.Certificate]
+  session_store : SessionStore?
+  seed : Bytes
+}
+pub fn ServerConfig::new(@x509.Certificate, @sm2.PrivateKey, @x509.Certificate, @sm2.PrivateKey, Bytes) -> Self
+
+pub struct ServerConn {
+  config : ServerConfig
+  prng : Prng
+  mut state : ServerState
+  read_layer : @record.RecordLayer
+  write_layer : @record.RecordLayer
+  mut write_encrypted : Bool
+  inbound : Array[Byte]
+  hs_buf : Array[Byte]
+  outbound : Array[Byte]
+  transcript : @handshake.Transcript
+  mut client_random : Bytes
+  mut server_random : Bytes
+  mut session_id : Bytes
+  mut suite : @handshake.CipherSuite?
+  mut peer_bundle : @x509.DualCertBundle?
+  mut server_eph_priv : @sm2.PrivateKey?
+  mut client_cert_requested : Bool
+  mut master_secret : Bytes
+  mut key_block : @handshake.KeyBlock?
+  mut resumed : Bool
+  mut local_closed : Bool
+  mut peer_closed : Bool
+}
+pub fn ServerConn::close_notify(Self) -> Bytes raise StateError
+pub fn ServerConn::export_session(Self) -> ResumedSession?
+pub fn ServerConn::feed(Self, BytesView) -> Array[Event] raise StateError
+pub fn ServerConn::is_established(Self) -> Bool
+pub fn ServerConn::is_failed(Self) -> Bool
+pub fn ServerConn::is_resumed(Self) -> Bool
+pub fn ServerConn::negotiated_suite(Self) -> @handshake.CipherSuite?
+pub fn ServerConn::new(ServerConfig) -> Self
+pub fn ServerConn::peer_certs(Self) -> @x509.DualCertBundle?
+pub fn ServerConn::session_id(Self) -> Bytes
+pub fn ServerConn::take_outbound(Self) -> Bytes
+pub fn ServerConn::write_app_data(Self, Bytes) -> Bytes raise StateError
+
+#derive(Eq)
+type ServerState
+
+pub struct SessionStore {
+  entries : Array[ResumedSession]
+}
+pub fn SessionStore::get(Self, Bytes) -> ResumedSession?
+pub fn SessionStore::len(Self) -> Int32
+pub fn SessionStore::new() -> Self
+pub fn SessionStore::put(Self, ResumedSession) -> Unit
+pub fn SessionStore::remove(Self, Bytes) -> Unit
+
+// Type aliases
+
+// Traits
