@@ -1,0 +1,143 @@
+name: MoonTLCP CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux (Wasm / JS / Native + OpenSSL Interop)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install MoonBit toolchain
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Print toolchain versions
+        run: |
+          moon version --all
+          python3 --version
+          openssl version || true
+
+      - name: Check formatting
+        run: moon fmt --check
+
+      - name: Check generated .mbti interfaces
+        run: |
+          moon info
+          git diff --exit-code -- '*.mbti'
+
+      - name: Type-check with warnings denied
+        run: moon check -d
+
+      - name: Run test suite (Wasm)
+        run: moon test --target wasm -d
+
+      - name: Run test suite (JS)
+        run: moon test --target js -d
+
+      - name: Run test suite (Native)
+        run: moon test --target native -d
+
+      - name: Run OpenSSL cross-language interop harness
+        run: |
+          if [ ! -f harness/interop_openssl.py ]; then
+            echo "harness/interop_openssl.py not present; skipping OpenSSL interop."
+            exit 0
+          fi
+          if command -v openssl >/dev/null 2>&1 \
+            && openssl list -digest-algorithms 2>/dev/null | grep -qi "sm3" \
+            && openssl list -cipher-algorithms 2>/dev/null | grep -qi "sm4-gcm"; then
+            echo "OpenSSL SM2/SM3/SM4 support detected: $(openssl version)"
+            python3 harness/interop_openssl.py
+          else
+            echo "OpenSSL on runner does not advertise SM3/SM4-GCM; skipping interop harness."
+          fi
+
+  windows:
+    name: Windows (Wasm / JS / Native MSVC + OpenSSL Interop)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install MoonBit toolchain
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+          irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.moon\bin"
+
+      - name: Print toolchain versions
+        shell: pwsh
+        run: |
+          moon version --all
+          python --version
+          if (Get-Command openssl -ErrorAction SilentlyContinue) { openssl version }
+
+      - name: Check formatting
+        shell: pwsh
+        run: moon fmt --check
+
+      - name: Check generated .mbti interfaces
+        shell: pwsh
+        run: |
+          moon info
+          git diff --exit-code -- '*.mbti'
+
+      - name: Type-check with warnings denied
+        shell: pwsh
+        run: moon check -d
+
+      - name: Run test suite (Wasm)
+        shell: pwsh
+        run: moon test --target wasm -d
+
+      - name: Run test suite (JS)
+        shell: pwsh
+        run: moon test --target js -d
+
+      - name: Run test suite (Native MSVC)
+        shell: pwsh
+        run: moon test --target native -d
+
+      - name: Run OpenSSL cross-language interop harness
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "harness/interop_openssl.py")) {
+            Write-Host "harness/interop_openssl.py not present; skipping OpenSSL interop."
+            exit 0
+          }
+          $openssl = Get-Command openssl -ErrorAction SilentlyContinue
+          if (-not $openssl -and (Test-Path "C:\Program Files\Git\usr\bin\openssl.exe")) {
+            $env:PATH = "C:\Program Files\Git\usr\bin;$env:PATH"
+            $openssl = Get-Command openssl -ErrorAction SilentlyContinue
+          }
+          if ($openssl) {
+            $digests = (openssl list -digest-algorithms 2>$null) -join "`n"
+            $ciphers = (openssl list -cipher-algorithms 2>$null) -join "`n"
+            if ($digests -match "(?i)sm3" -and $ciphers -match "(?i)sm4-gcm") {
+              Write-Host "OpenSSL SM2/SM3/SM4 support detected: $(openssl version)"
+              python harness/interop_openssl.py
+              exit $LASTEXITCODE
+            }
+          }
+          Write-Host "OpenSSL on runner does not advertise SM3/SM4-GCM; skipping interop harness."
