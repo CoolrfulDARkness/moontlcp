@@ -698,3 +698,28 @@ test "handshake decoder rejects malformed lengths, invalid versions, unsupported
   }
   assert_true(bad_cv)
 }
+
+///|
+test "decode_handshake_frame immediately rejects oversized handshake body > MAX_HANDSHAKE_MSG_LEN" {
+  assert_eq(@handshake.MAX_HANDSHAKE_MSG_LEN, 65536)
+  // 4-byte header claiming 65537 (0x010001) bytes must immediately raise InvalidLength
+  let over_hdr = Bytes::from_array([b'\x0B', b'\x01', b'\x00', b'\x01'])
+  let rejected = try {
+    ignore(@handshake.decode_handshake_frame(over_hdr[:]))
+    false
+  } catch {
+    @handshake.InvalidLength => true
+    _ => false
+  }
+  assert_true(rejected)
+  // 4-byte header claiming exactly 65536 (0x010000) bytes with no body raises Incomplete (allowed size)
+  let max_hdr = Bytes::from_array([b'\x0B', b'\x01', b'\x00', b'\x00'])
+  let is_inc = try {
+    ignore(@handshake.decode_handshake_frame(max_hdr[:]))
+    false
+  } catch {
+    @handshake.Incomplete => true
+    _ => false
+  }
+  assert_true(is_inc)
+}

@@ -165,6 +165,16 @@ pub fn parse_and_verify_dual_certs(
   for i = 2; i < cert_ders.length(); i = i + 1 {
     intermediates.push(Certificate::from_der(cert_ders[i]))
   }
+  if sign_cert.is_ca {
+    raise BadKeyUsage(
+      "signing certificate must be an end-entity leaf certificate (is_ca=true rejected)",
+    )
+  }
+  if enc_cert.is_ca {
+    raise BadKeyUsage(
+      "encryption certificate must be an end-entity leaf certificate (is_ca=true rejected)",
+    )
+  }
   check_sign_cert_usage(sign_cert)
   check_enc_cert_usage(enc_cert)
   verify_cert_to_anchors(sign_cert, intermediates, trust_anchors)

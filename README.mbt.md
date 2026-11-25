@@ -59,18 +59,13 @@ python harness/interop_openssl.py
 ### 4. 代码调用示例（Sans-I/O 内存通道握手）
 ```moonbit nocheck
 let pki = @moontlcp.generate_test_pki(b"demo-seed")
-let client_cfg = @state.ClientConfig::new(
-  [pki.ca_cert],
-  cipher_suites=[@handshake.CipherSuite::EccSm4GcmSm3],
-  seed=b"client-seed",
-)
+let client_cfg = @state.ClientConfig::new([pki.ca_cert], b"client-seed")
 let server_cfg = @state.ServerConfig::new(
   pki.server_sign_cert,
   pki.server_sign_priv,
   pki.server_enc_cert,
   pki.server_enc_priv,
-  cipher_suites=[@handshake.CipherSuite::EccSm4GcmSm3],
-  seed=b"server-seed",
+  b"server-seed",
 )
 let client = @moontlcp.new_client(client_cfg)
 let server = @moontlcp.new_server(server_cfg)

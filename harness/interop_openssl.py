@@ -40,15 +40,74 @@ BUILD_DIR = ROOT / "_build_harness"
 SM2_ALG_ID = bytes.fromhex("301306072a8648ce3d020106082a811ccf5501822d")
 
 
+def supports_gm_crypto(openssl_bin: str) -> bool:
+    """Return True iff the given openssl binary supports SM3 and SM4-GCM."""
+    try:
+        ciphers = subprocess.run(
+            [openssl_bin, "list", "-cipher-algorithms"],
+            capture_output=True,
+            timeout=10,
+        )
+        digests = subprocess.run(
+            [openssl_bin, "list", "-digest-algorithms"],
+            capture_output=True,
+            timeout=10,
+        )
+    except OSError:
+        return False
+    if ciphers.returncode != 0 or digests.returncode != 0:
+        return False
+    c_out = ciphers.stdout.decode(errors="ignore").upper()
+    d_out = digests.stdout.decode(errors="ignore").upper()
+    return "SM4-GCM" in c_out and "SM3" in d_out
+
+
 def find_openssl() -> str:
-    candidates = [
-        os.environ.get("OPENSSL_BIN"),
-        r"D:\Git\usr\bin\openssl.exe",
-        shutil.which("openssl"),
+    # 1. Explicit OPENSSL_BIN override takes highest priority
+    env_bin = os.environ.get("OPENSSL_BIN")
+    if env_bin and Path(env_bin).exists():
+        return str(env_bin)
+
+    # 2. PATH lookup first, then standard cross-platform locations & Git-for-Windows sibling
+    candidates: list[str] = []
+    which_ossl = shutil.which("openssl")
+    if which_ossl:
+        candidates.append(which_ossl)
+
+    standard_paths = [
+        r"C:\Program Files\Git\usr\bin\openssl.exe",
+        r"C:\Program Files\OpenSSL-Win64\bin\openssl.exe",
+        "/usr/bin/openssl",
+        "/usr/local/bin/openssl",
+        "/opt/homebrew/opt/openssl@3/bin/openssl",
+        "/usr/local/opt/openssl@3/bin/openssl",
     ]
-    for c in candidates:
-        if c and Path(c).exists():
-            return str(c)
+    # On Windows, if git is in PATH, also probe its bundled usr/bin/openssl.exe dynamically
+    which_git = shutil.which("git")
+    if which_git:
+        git_ossl = Path(which_git).resolve().parent.parent / "usr" / "bin" / "openssl.exe"
+        standard_paths.append(str(git_ossl))
+
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for c in candidates + standard_paths:
+        if not c:
+            continue
+        norm = os.path.normcase(os.path.abspath(c))
+        if norm not in seen and Path(c).exists():
+            seen.add(norm)
+            ordered.append(str(c))
+
+    # Prefer the first binary that supports SM3 + SM4-GCM
+    for c in ordered:
+        if supports_gm_crypto(c):
+            return c
+
+    if ordered:
+        raise RuntimeError(
+            f"Found OpenSSL ({', '.join(ordered)}) but none supports SM3 + SM4-GCM; "
+            "set OPENSSL_BIN to an OpenSSL 3.x binary with SM2/SM3/SM4 enabled"
+        )
     raise RuntimeError("openssl binary not found; set OPENSSL_BIN or install OpenSSL 3.x")
 
 

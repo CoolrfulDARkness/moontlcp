@@ -29,6 +29,11 @@ pub const HT_CLIENT_KEY_EXCHANGE : Byte = b'\x10'
 pub const HT_FINISHED : Byte = b'\x14'
 
 ///|
+/// Maximum allowed handshake message body length (64 KiB) to prevent memory
+/// exhaustion / reassembly DoS attacks.
+pub const MAX_HANDSHAKE_MSG_LEN : Int32 = 65536
+
+///|
 const RANDOM_LEN : Int32 = 32
 
 ///|
@@ -342,7 +347,9 @@ pub fn encode_handshake_msg(msg : HandshakeMsg) -> Bytes {
 ///|
 /// Decodes one handshake frame header + body slice from a possibly coalesced
 /// handshake stream, returning `(msg_type, body_view, total_bytes_consumed)`.
-/// Raises `Incomplete` if fewer than `4 + body_len` bytes are available.
+/// Rejects frames exceeding `MAX_HANDSHAKE_MSG_LEN` immediately with
+/// `InvalidLength`, and raises `Incomplete` if fewer than `4 + body_len` bytes
+/// are available.
 pub fn decode_handshake_frame(
   buf : BytesView,
 ) -> (Byte, BytesView, Int32) raise HandshakeError {
@@ -351,6 +358,9 @@ pub fn decode_handshake_frame(
   }
   let msg_type = buf[0]
   let body_len = read_be24(buf, 1)
+  if body_len > MAX_HANDSHAKE_MSG_LEN {
+    raise InvalidLength
+  }
   let total = 4 + body_len
   if buf.length() < total {
     raise Incomplete

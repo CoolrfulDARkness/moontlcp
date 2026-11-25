@@ -43,31 +43,41 @@ fn Prng::new(seed : Bytes) -> Prng {
 }
 
 ///|
-fn Prng::next_bytes(self : Prng, domain : Bytes, len : Int32) -> Bytes {
-  let ctr = FixedArray::make(8, b'\x00')
-  let v = self.counter
-  ctr[0] = ((v >> 56) & 0xFFUL).to_byte()
-  ctr[1] = ((v >> 48) & 0xFFUL).to_byte()
-  ctr[2] = ((v >> 40) & 0xFFUL).to_byte()
-  ctr[3] = ((v >> 32) & 0xFFUL).to_byte()
-  ctr[4] = ((v >> 24) & 0xFFUL).to_byte()
-  ctr[5] = ((v >> 16) & 0xFFUL).to_byte()
-  ctr[6] = ((v >> 8) & 0xFFUL).to_byte()
-  ctr[7] = (v & 0xFFUL).to_byte()
-  self.counter = self.counter + 1UL
-  @sm3.tlcp_prf(self.seed, domain, Bytes::from_array(ctr), len)
+fn encode_u64_be(v : UInt64) -> Bytes {
+  let out = FixedArray::make(8, b'\x00')
+  out[0] = ((v >> 56) & 0xFFUL).to_byte()
+  out[1] = ((v >> 48) & 0xFFUL).to_byte()
+  out[2] = ((v >> 40) & 0xFFUL).to_byte()
+  out[3] = ((v >> 32) & 0xFFUL).to_byte()
+  out[4] = ((v >> 24) & 0xFFUL).to_byte()
+  out[5] = ((v >> 16) & 0xFFUL).to_byte()
+  out[6] = ((v >> 8) & 0xFFUL).to_byte()
+  out[7] = (v & 0xFFUL).to_byte()
+  Bytes::from_array(out)
 }
 
 ///|
+fn Prng::next_bytes(self : Prng, domain : Bytes, len : Int32) -> Bytes {
+  let ctr = encode_u64_be(self.counter)
+  self.counter = self.counter + 1UL
+  @sm3.tlcp_prf(self.seed, domain, ctr, len)
+}
+
+///|
+/// Returns the per-record explicit IV/nonce:
+/// - `SM4-GCM` (RFC 5288 §3): big-endian 64-bit record sequence number (strictly
+///   unique across 2^64 records with zero extra PRF overhead).
+/// - `SM4-CBC` (RFC 5246 §6.2.3.2): unpredictable 16-byte DRBG explicit IV.
 fn Prng::next_explicit_iv(
   self : Prng,
   suite : @handshake.CipherSuite?,
+  seq : UInt64,
 ) -> Bytes {
   match suite {
     None => b""
     Some(s) =>
       if s.is_gcm() {
-        self.next_bytes(b"tlcp-gcm-nonce", 8)
+        encode_u64_be(seq)
       } else {
         self.next_bytes(b"tlcp-cbc-iv", @sm4.SM4_BLOCK_SIZE)
       }

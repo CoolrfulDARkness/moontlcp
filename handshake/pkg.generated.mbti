@@ -27,6 +27,8 @@ pub const HT_SERVER_HELLO_DONE : Byte = b'\x0E'
 
 pub const HT_SERVER_KEY_EXCHANGE : Byte = b'\x0C'
 
+pub const MAX_HANDSHAKE_MSG_LEN : Int32 = 65536
+
 pub const NAMED_CURVE_SM2P256V1 : UInt32 = 0x0029
 
 pub fn build_ecc_ske_tbs(Bytes, Bytes, Bytes) -> Bytes

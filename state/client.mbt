@@ -108,6 +108,7 @@ pub fn ClientConn::session_id(self : ClientConn) -> Bytes {
 pub fn ClientConn::export_session(self : ClientConn) -> ResumedSession? {
   if !self.is_established() ||
     self.session_id.length() == 0 ||
+    self.session_id.length() > 32 ||
     self.master_secret.length() != 48 {
     return None
   }
@@ -117,6 +118,7 @@ pub fn ClientConn::export_session(self : ClientConn) -> ResumedSession? {
         session_id: self.session_id,
         cipher_suite: s,
         master_secret: self.master_secret,
+        peer_certs: self.peer_bundle,
       })
     None => None
   }
@@ -136,7 +138,7 @@ fn ClientConn::seal_fragment(
   plaintext : Bytes,
 ) -> Bytes raise StateError {
   let iv = if self.write_encrypted {
-    self.prng.next_explicit_iv(self.suite)
+    self.prng.next_explicit_iv(self.suite, self.write_layer.seq_num())
   } else {
     b""
   }
@@ -162,7 +164,7 @@ fn ClientConn::queue_fatal_alert(
     description: desc,
   })
   let iv = if self.write_encrypted {
-    self.prng.next_explicit_iv(self.suite)
+    self.prng.next_explicit_iv(self.suite, self.write_layer.seq_num())
   } else {
     b""
   }
@@ -237,7 +239,15 @@ pub fn ClientConn::start_handshake(self : ClientConn) -> Bytes raise StateError 
   }
   self.client_random = self.prng.next_bytes(b"client-random", 32)
   let offer_sid = match self.config.resume_session {
-    Some(rs) => rs.session_id
+    Some(rs) => {
+      if !is_valid_resumed_session(rs) {
+        self.state = Failed
+        raise InvalidState(
+          "invalid resumed session: session_id must be 1..32 bytes and master_secret 48 bytes",
+        )
+      }
+      rs.session_id
+    }
     None => b""
   }
   let suites_u16 : Array[UInt32] = Array(
@@ -538,7 +548,9 @@ fn ClientConn::handle_handshake_msg(
       // Check for Session ID resumption
       match self.config.resume_session {
         Some(rs) =>
-          if sh.session_id.length() > 0 && sh.session_id == rs.session_id {
+          if is_valid_resumed_session(rs) &&
+            sh.session_id.length() > 0 &&
+            sh.session_id == rs.session_id {
             if sh.cipher_suite != rs.cipher_suite {
               self.fail_protocol(
                 @handshake.IllegalParameter,
@@ -547,6 +559,7 @@ fn ClientConn::handle_handshake_msg(
             }
             self.resumed = true
             self.master_secret = rs.master_secret
+            self.peer_bundle = rs.peer_certs
             let kb = @handshake.derive_key_block(
               rs.master_secret,
               self.server_random,
@@ -667,6 +680,12 @@ fn ClientConn::handle_handshake_msg(
           "server Finished verify_data mismatch",
         )
       }
+      if self.hs_buf.length() != 0 {
+        self.fail_protocol(
+          @handshake.UnexpectedMessage,
+          "trailing handshake bytes after server Finished",
+        )
+      }
       self.transcript.update(raw_frame)
       if self.resumed {
         let suite = match self.suite {
@@ -765,6 +784,13 @@ fn ClientConn::handle_record(
           "unexpected handshake record in current client state",
         )
       }
+      if self.hs_buf.length() + pt.length() >
+        @handshake.MAX_HANDSHAKE_MSG_LEN + 4 {
+        self.fail_protocol(
+          @handshake.DecodeError,
+          "handshake reassembly buffer exceeded MAX_HANDSHAKE_MSG_LEN",
+        )
+      }
       append_bytes(self.hs_buf, pt)
       self.process_handshake_buf(events)
     }
@@ -826,6 +852,12 @@ fn ClientConn::handle_record(
         self.fail_protocol(
           @handshake.UnexpectedMessage,
           "application data received before handshake complete",
+        )
+      }
+      if self.peer_closed {
+        self.fail_protocol(
+          @handshake.UnexpectedMessage,
+          "application data received after peer CloseNotify",
         )
       }
       if pt.length() > 0 {

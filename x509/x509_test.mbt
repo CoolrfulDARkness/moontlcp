@@ -476,3 +476,72 @@ test "OpenSSL-style multi-RDN, NULL alg param, non-critical extensions, and vers
     is Some(@x509.X509Error::UnsupportedAlgorithm("1.2.840.10045.4.3.2")),
   )
 }
+
+///|
+test "CA certificate masquerading as signing or encryption leaf cert is rejected" {
+  let pki = @x509.generate_test_pki(b"ca-as-leaf-test")
+
+  // Root CA passed directly in signing slot [0] -> rejected with BadKeyUsage
+  assert_true(
+    catch_x509(() => {
+      @x509.parse_and_verify_dual_certs(
+        [pki.ca_cert.raw_der, pki.server_enc_cert.raw_der],
+        [pki.ca_cert],
+      )
+    })
+    is Some(@x509.X509Error::BadKeyUsage(_)),
+  )
+
+  // Root CA passed directly in encryption slot [1] -> rejected with BadKeyUsage
+  assert_true(
+    catch_x509(() => {
+      @x509.parse_and_verify_dual_certs(
+        [pki.server_sign_cert.raw_der, pki.ca_cert.raw_der],
+        [pki.ca_cert],
+      )
+    })
+    is Some(@x509.X509Error::BadKeyUsage(_)),
+  )
+
+  // Intermediate CA that ALSO sets digitalSignature + keyEncipherment must still be rejected as leaf
+  let tricky_ca_priv = @sm2.derive_keypair_from_seed(b"tricky-ca-leaf")
+  let tricky_ca = @x509.build_sm2_cert(
+    {
+      serial: 101UL,
+      subject_cn: "Tricky Sub-CA",
+      issuer_cn: pki.ca_cert.subject_cn,
+      not_before: "260101000000Z",
+      not_after: "360101000000Z",
+      is_ca: true,
+      key_usage: {
+        digital_signature: true,
+        content_commitment: true,
+        key_encipherment: true,
+        data_encipherment: true,
+        key_agreement: true,
+        key_cert_sign: true,
+        crl_sign: true,
+      },
+    },
+    tricky_ca_priv.public_key(),
+    pki.ca_priv,
+  )
+  assert_true(
+    catch_x509(() => {
+      @x509.parse_and_verify_dual_certs(
+        [tricky_ca.raw_der, pki.server_enc_cert.raw_der],
+        [pki.ca_cert],
+      )
+    })
+    is Some(@x509.X509Error::BadKeyUsage(_)),
+  )
+  assert_true(
+    catch_x509(() => {
+      @x509.parse_and_verify_dual_certs(
+        [pki.server_sign_cert.raw_der, tricky_ca.raw_der],
+        [pki.ca_cert],
+      )
+    })
+    is Some(@x509.X509Error::BadKeyUsage(_)),
+  )
+}

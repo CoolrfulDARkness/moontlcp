@@ -3,7 +3,7 @@
 
 ///|
 /// Returns the default ordered list of all 4 GM/T 0024-2023 cipher suites
-/// (preferring ECDHE and SM4-GCM AEAD first).
+/// (preferring ECC with SM4-GCM AEAD first, followed by ECC-CBC and ECDHE suites).
 pub fn default_cipher_suites() -> Array[@handshake.CipherSuite] {
   [
     @handshake.EccSm4GcmSm3,

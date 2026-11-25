@@ -1018,3 +1018,478 @@ test "adversarial 22: oversized record header (>18432B) rejected immediately wit
     @handshake.RecordOverflow,
   )
 }
+
+///|
+test "adversarial 23: oversized handshake frame DoS (>64KiB) immediately rejected with DecodeError" {
+  let pki = @x509.generate_test_pki(b"adv-23")
+  // Part A: single handshake record whose 4B header claims 65537 (0x010001) bytes
+  let server_a = @state.ServerConn::new(
+    @state.ServerConfig::new(
+      pki.server_sign_cert,
+      pki.server_sign_priv,
+      pki.server_enc_cert,
+      pki.server_enc_priv,
+      b"adv-23-sa",
+    ),
+  )
+  let huge_hs_hdr = @record.encode_record({
+    content_type: @record.Handshake,
+    version_major: b'\x01',
+    version_minor: b'\x01',
+    payload: Bytes::from_array([b'\x01', b'\x01', b'\x00', b'\x01', b'\x00']),
+  })
+  let ok_a = try {
+    ignore(server_a.feed(huge_hs_hdr[:]))
+    false
+  } catch {
+    @state.ProtocolError(@handshake.DecodeError, _) => true
+    _ => false
+  }
+  assert_true(ok_a)
+  assert_true(server_a.is_failed())
+  adv_assert_plaintext_fatal_alert(
+    server_a.take_outbound(),
+    @handshake.DecodeError,
+  )
+  // Part B: multi-record handshake reassembly attempting to accumulate > 65540 bytes
+  let server_b = @state.ServerConn::new(
+    @state.ServerConfig::new(
+      pki.server_sign_cert,
+      pki.server_sign_priv,
+      pki.server_enc_cert,
+      pki.server_enc_priv,
+      b"adv-23-sb",
+    ),
+  )
+  // First record claims valid 65536B body (0x010000) with 16380B payload (total 16384B)
+  let first_chunk = FixedArray::make(16384, b'\x41')
+  first_chunk[0] = b'\x01'
+  first_chunk[1] = b'\x01'
+  first_chunk[2] = b'\x00'
+  first_chunk[3] = b'\x00'
+  let rec1 = @record.encode_record({
+    content_type: @record.Handshake,
+    version_major: b'\x01',
+    version_minor: b'\x01',
+    payload: Bytes::from_array(first_chunk),
+  })
+  let cont_rec = @record.encode_record({
+    content_type: @record.Handshake,
+    version_major: b'\x01',
+    version_minor: b'\x01',
+    payload: Bytes::make(16384, b'\x42'),
+  })
+  // 5 * 16384 = 81920 > 65540 must trigger hs_buf cap DecodeError
+  let flood = adv_concat([rec1, cont_rec, cont_rec, cont_rec, cont_rec])
+  let ok_b = try {
+    ignore(server_b.feed(flood[:]))
+    false
+  } catch {
+    @state.ProtocolError(@handshake.DecodeError, _) => true
+    _ => false
+  }
+  assert_true(ok_b)
+  assert_true(server_b.is_failed())
+  adv_assert_plaintext_fatal_alert(
+    server_b.take_outbound(),
+    @handshake.DecodeError,
+  )
+}
+
+///|
+test "adversarial 24: trailing bytes injected after Finished in same record rejected and GCM explicit nonce equals seq" {
+  let pki = @x509.generate_test_pki(b"adv-24")
+  let store = @state.SessionStore::new()
+  // 1. Establish initial GCM session to obtain master_secret and also verify RFC 5288 GCM explicit nonce = seq
+  let (c1, s1) = adv_setup_established(pki, @handshake.EccSm4GcmSm3, b"24-init")
+  let app_w0 = c1.write_app_data(b"check-nonce-seq-1")
+  let app_w1 = c1.write_app_data(b"check-nonce-seq-2")
+  // Record seq 0 was Finished; app_w0 has seq=1, app_w1 has seq=2 in explicit nonce (bytes 5..13)
+  let (r0, _) = @record.decode_record(app_w0[:])
+  let (r1, _) = @record.decode_record(app_w1[:])
+  assert_eq(r0.payload[0:8].to_owned(), b"\x00\x00\x00\x00\x00\x00\x00\x01")
+  assert_eq(r1.payload[0:8].to_owned(), b"\x00\x00\x00\x00\x00\x00\x00\x02")
+  ignore(s1.feed(app_w0[:]))
+  ignore(s1.feed(app_w1[:]))
+  // 2. Populate SessionStore with a fresh full handshake
+  let c_seed = @state.ClientConn::new({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: None,
+    resume_session: None,
+    seed: b"adv-24-c1",
+  })
+  let s_seed = @state.ServerConn::new({
+    sign_cert: pki.server_sign_cert,
+    sign_priv: pki.server_sign_priv,
+    enc_cert: pki.server_enc_cert,
+    enc_priv: pki.server_enc_priv,
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    require_client_cert: false,
+    client_trust_anchors: [],
+    session_store: Some(store),
+    seed: b"adv-24-s1",
+  })
+  ignore(run_handshake(c_seed, s_seed))
+  let saved = match c_seed.export_session() {
+    Some(s) => s
+    None => abort("expected saved session")
+  }
+  // 3. Start resumed handshake and craft ClientFinished + 1 trailing byte in the SAME encrypted record
+  let c2 = @state.ClientConn::new({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: None,
+    resume_session: Some(saved),
+    seed: b"adv-24-c2",
+  })
+  let s2 = @state.ServerConn::new({
+    sign_cert: pki.server_sign_cert,
+    sign_priv: pki.server_sign_priv,
+    enc_cert: pki.server_enc_cert,
+    enc_priv: pki.server_enc_priv,
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    require_client_cert: false,
+    client_trust_anchors: [],
+    session_store: Some(store),
+    seed: b"adv-24-s2",
+  })
+  let ch_wire = c2.start_handshake()
+  let (ch_rec, _) = @record.decode_record(ch_wire[:])
+  let (_, ch_body, _) = @handshake.decode_handshake_frame(ch_rec.payload[:])
+  let cr = match
+    @handshake.decode_handshake_msg(@handshake.HT_CLIENT_HELLO, ch_body, false) {
+    @handshake.ClientHello(ch) => ch.random
+    _ => abort("expected ClientHello")
+  }
+  ignore(s2.feed(ch_wire[:]))
+  let s_flight = s2.take_outbound()
+  let s_recs = adv_parse_records(s_flight)
+  // s_recs[0]=ServerHello, s_recs[1]=CCS, s_recs[2]=ServerFinished (encrypted)
+  let (_, sh_body, _) = @handshake.decode_handshake_frame(s_recs[0].payload[:])
+  let sr = match
+    @handshake.decode_handshake_msg(@handshake.HT_SERVER_HELLO, sh_body, false) {
+    @handshake.ServerHello(sh) => sh.random
+    _ => abort("expected ServerHello")
+  }
+  let kb = @handshake.derive_key_block(
+    saved.master_secret,
+    sr,
+    cr,
+    @handshake.EccSm4GcmSm3,
+  )
+  let s_read = @record.RecordLayer::new()
+  s_read.set_cipher(
+    @record.CipherState::new_gcm(kb.server_write_key, kb.server_write_iv),
+  )
+  let s_fin_raw = s_read.open(s_recs[2])
+  let tr = @handshake.Transcript::new()
+  tr.update(ch_rec.payload)
+  tr.update(s_recs[0].payload)
+  tr.update(s_fin_raw)
+  let c_vd = @handshake.compute_verify_data(
+    saved.master_secret,
+    true,
+    tr.hash(),
+  )
+  let poisoned_fin_payload = adv_concat([
+    @handshake.encode_handshake_msg(@handshake.Finished({ verify_data: c_vd, })),
+    b"\x14",
+  ])
+  let c_ccs = @record.encode_record({
+    content_type: @record.ChangeCipherSpec,
+    version_major: b'\x01',
+    version_minor: b'\x01',
+    payload: b"\x01",
+  })
+  let c_write = @record.RecordLayer::new()
+  c_write.set_cipher(
+    @record.CipherState::new_gcm(kb.client_write_key, kb.client_write_iv),
+  )
+  let poisoned_fin_rec = c_write.seal(
+    @record.Handshake,
+    poisoned_fin_payload,
+    b"\x00\x00\x00\x00\x00\x00\x00\x00",
+  )
+  let ok = try {
+    ignore(s2.feed(adv_concat([c_ccs, poisoned_fin_rec])[:]))
+    false
+  } catch {
+    @state.ProtocolError(@handshake.UnexpectedMessage, _) => true
+    _ => false
+  }
+  assert_true(ok)
+  assert_true(s2.is_failed())
+  assert_true(!s2.is_established())
+}
+
+///|
+test "adversarial 25: non-mTLCP session cannot bypass mTLCP server and invalid ResumedSession rejected" {
+  let pki = @x509.generate_test_pki(b"adv-25")
+  let shared_store = @state.SessionStore::new()
+  // Part A: Client completes a 1-way (no client cert) handshake into shared_store
+  let c_oneway = @state.ClientConn::new({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: None,
+    resume_session: None,
+    seed: b"adv-25-c1",
+  })
+  let s_oneway = @state.ServerConn::new({
+    sign_cert: pki.server_sign_cert,
+    sign_priv: pki.server_sign_priv,
+    enc_cert: pki.server_enc_cert,
+    enc_priv: pki.server_enc_priv,
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    require_client_cert: false,
+    client_trust_anchors: [],
+    session_store: Some(shared_store),
+    seed: b"adv-25-s1",
+  })
+  ignore(run_handshake(c_oneway, s_oneway))
+  let unauth_session = match c_oneway.export_session() {
+    Some(s) => s
+    None => abort("expected session")
+  }
+  // Attempt to resume unauth_session against an mTLCP server (require_client_cert = true)
+  let c_escalate = @state.ClientConn::new({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: None,
+    resume_session: Some(unauth_session),
+    seed: b"adv-25-c2",
+  })
+  let s_mtlcp = @state.ServerConn::new({
+    sign_cert: pki.server_sign_cert,
+    sign_priv: pki.server_sign_priv,
+    enc_cert: pki.server_enc_cert,
+    enc_priv: pki.server_enc_priv,
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    require_client_cert: true,
+    client_trust_anchors: [pki.ca_cert],
+    session_store: Some(shared_store),
+    seed: b"adv-25-s2",
+  })
+  let esc_blocked = try {
+    ignore(run_handshake(c_escalate, s_mtlcp))
+    false
+  } catch {
+    @state.ProtocolError(@handshake.HandshakeFailure, _) => true
+    _ => false
+  }
+  assert_true(esc_blocked)
+  assert_true(!s_mtlcp.is_resumed())
+  assert_true(!s_mtlcp.is_established())
+  // Part B: Genuine mTLCP session CAN resume and restores server.peer_certs()
+  let c_m1 = @state.ClientConn::new({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: Some(
+      (
+        pki.client_sign_cert,
+        pki.client_sign_priv,
+        pki.client_enc_cert,
+        pki.client_enc_priv,
+      ),
+    ),
+    resume_session: None,
+    seed: b"adv-25-cm1",
+  })
+  let s_m1 = @state.ServerConn::new({
+    sign_cert: pki.server_sign_cert,
+    sign_priv: pki.server_sign_priv,
+    enc_cert: pki.server_enc_cert,
+    enc_priv: pki.server_enc_priv,
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    require_client_cert: true,
+    client_trust_anchors: [pki.ca_cert],
+    session_store: Some(shared_store),
+    seed: b"adv-25-sm1",
+  })
+  ignore(run_handshake(c_m1, s_m1))
+  let mtlcp_session = match c_m1.export_session() {
+    Some(s) => s
+    None => abort("expected mTLCP session")
+  }
+  let c_m2 = @state.ClientConn::new({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: Some(
+      (
+        pki.client_sign_cert,
+        pki.client_sign_priv,
+        pki.client_enc_cert,
+        pki.client_enc_priv,
+      ),
+    ),
+    resume_session: Some(mtlcp_session),
+    seed: b"adv-25-cm2",
+  })
+  let s_m2 = @state.ServerConn::new({
+    sign_cert: pki.server_sign_cert,
+    sign_priv: pki.server_sign_priv,
+    enc_cert: pki.server_enc_cert,
+    enc_priv: pki.server_enc_priv,
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    require_client_cert: true,
+    client_trust_anchors: [pki.ca_cert],
+    session_store: Some(shared_store),
+    seed: b"adv-25-sm2",
+  })
+  ignore(run_handshake(c_m2, s_m2))
+  assert_true(c_m2.is_resumed() && s_m2.is_resumed())
+  assert_true(s_m2.peer_certs() is Some(_))
+  assert_true(c_m2.peer_certs() is Some(_))
+  // Part C: Invalid ResumedSession (bad master_secret or session_id > 32B) rejected
+  let bad_ms_client = @state.ClientConn::new({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: None,
+    resume_session: Some({
+      session_id: Bytes::make(16, b'\x01'),
+      cipher_suite: @handshake.EccSm4GcmSm3,
+      master_secret: Bytes::make(16, b'\x02'),
+      peer_certs: None,
+    }),
+    seed: b"adv-25-bad1",
+  })
+  let bad_ms_rej = try {
+    ignore(bad_ms_client.start_handshake())
+    false
+  } catch {
+    @state.InvalidState(_) => true
+    _ => false
+  }
+  assert_true(bad_ms_rej)
+  let bad_sid_client = @state.ClientConn::new({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: None,
+    resume_session: Some({
+      session_id: Bytes::make(33, b'\x01'),
+      cipher_suite: @handshake.EccSm4GcmSm3,
+      master_secret: Bytes::make(48, b'\x02'),
+      peer_certs: None,
+    }),
+    seed: b"adv-25-bad2",
+  })
+  let bad_sid_rej = try {
+    ignore(bad_sid_client.start_handshake())
+    false
+  } catch {
+    @state.InvalidState(_) => true
+    _ => false
+  }
+  assert_true(bad_sid_rej)
+}
+
+///|
+test "adversarial 26: ApplicationData sent after peer CloseNotify rejected with UnexpectedMessage" {
+  let pki = @x509.generate_test_pki(b"adv-26")
+  let store = @state.SessionStore::new()
+  // Establish a resumed session so we can craft a validly encrypted ApplicationData record after CloseNotify
+  let c1 = @state.ClientConn::new({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: None,
+    resume_session: None,
+    seed: b"adv-26-c1",
+  })
+  let s1 = @state.ServerConn::new({
+    sign_cert: pki.server_sign_cert,
+    sign_priv: pki.server_sign_priv,
+    enc_cert: pki.server_enc_cert,
+    enc_priv: pki.server_enc_priv,
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    require_client_cert: false,
+    client_trust_anchors: [],
+    session_store: Some(store),
+    seed: b"adv-26-s1",
+  })
+  ignore(run_handshake(c1, s1))
+  let saved = match c1.export_session() {
+    Some(s) => s
+    None => abort("expected session")
+  }
+  let c2 = @state.ClientConn::new({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: None,
+    resume_session: Some(saved),
+    seed: b"adv-26-c2",
+  })
+  let s2 = @state.ServerConn::new({
+    sign_cert: pki.server_sign_cert,
+    sign_priv: pki.server_sign_priv,
+    enc_cert: pki.server_enc_cert,
+    enc_priv: pki.server_enc_priv,
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    require_client_cert: false,
+    client_trust_anchors: [],
+    session_store: Some(store),
+    seed: b"adv-26-s2",
+  })
+  let ch_wire = c2.start_handshake()
+  let (ch_rec, _) = @record.decode_record(ch_wire[:])
+  let (_, ch_body, _) = @handshake.decode_handshake_frame(ch_rec.payload[:])
+  let cr = match
+    @handshake.decode_handshake_msg(@handshake.HT_CLIENT_HELLO, ch_body, false) {
+    @handshake.ClientHello(ch) => ch.random
+    _ => abort("expected ClientHello")
+  }
+  ignore(s2.feed(ch_wire[:]))
+  let s_flight = s2.take_outbound()
+  let s_recs = adv_parse_records(s_flight)
+  let (_, sh_body, _) = @handshake.decode_handshake_frame(s_recs[0].payload[:])
+  let sr = match
+    @handshake.decode_handshake_msg(@handshake.HT_SERVER_HELLO, sh_body, false) {
+    @handshake.ServerHello(sh) => sh.random
+    _ => abort("expected ServerHello")
+  }
+  ignore(c2.feed(s_flight[:]))
+  ignore(s2.feed(c2.take_outbound()[:]))
+  assert_true(c2.is_established() && s2.is_established())
+  // Client sends valid CloseNotify (seq=1) -> Server emits PeerClosed
+  let close_wire = c2.close_notify()
+  assert_eq(s2.feed(close_wire[:]), [@state.PeerClosed])
+  // Now craft a validly encrypted ApplicationData record at seq=2 after CloseNotify
+  let kb = @handshake.derive_key_block(
+    saved.master_secret,
+    sr,
+    cr,
+    @handshake.EccSm4GcmSm3,
+  )
+  let forge_layer = @record.RecordLayer::new()
+  forge_layer.set_cipher(
+    @record.CipherState::new_gcm(kb.client_write_key, kb.client_write_iv),
+  )
+  // Advance forge_layer seq 0 -> 1 -> 2 to match server's expected next seq
+  ignore(
+    forge_layer.seal(
+      @record.Handshake,
+      b"skip0",
+      b"\x00\x00\x00\x00\x00\x00\x00\x00",
+    ),
+  )
+  ignore(
+    forge_layer.seal(
+      @record.Alert,
+      b"skip1",
+      b"\x00\x00\x00\x00\x00\x00\x00\x01",
+    ),
+  )
+  let post_close_app = forge_layer.seal(
+    @record.ApplicationData,
+    b"illegal data after CloseNotify",
+    b"\x00\x00\x00\x00\x00\x00\x00\x02",
+  )
+  let ok = try {
+    ignore(s2.feed(post_close_app[:]))
+    false
+  } catch {
+    @state.ProtocolError(@handshake.UnexpectedMessage, _) => true
+    _ => false
+  }
+  assert_true(ok)
+  assert_true(s2.is_failed())
+}

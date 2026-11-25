@@ -106,6 +106,7 @@ pub fn ServerConn::session_id(self : ServerConn) -> Bytes {
 pub fn ServerConn::export_session(self : ServerConn) -> ResumedSession? {
   if !self.is_established() ||
     self.session_id.length() == 0 ||
+    self.session_id.length() > 32 ||
     self.master_secret.length() != 48 {
     return None
   }
@@ -115,6 +116,7 @@ pub fn ServerConn::export_session(self : ServerConn) -> ResumedSession? {
         session_id: self.session_id,
         cipher_suite: s,
         master_secret: self.master_secret,
+        peer_certs: self.peer_bundle,
       })
     None => None
   }
@@ -134,7 +136,7 @@ fn ServerConn::seal_fragment(
   plaintext : Bytes,
 ) -> Bytes raise StateError {
   let iv = if self.write_encrypted {
-    self.prng.next_explicit_iv(self.suite)
+    self.prng.next_explicit_iv(self.suite, self.write_layer.seq_num())
   } else {
     b""
   }
@@ -160,7 +162,7 @@ fn ServerConn::queue_fatal_alert(
     description: desc,
   })
   let iv = if self.write_encrypted {
-    self.prng.next_explicit_iv(self.suite)
+    self.prng.next_explicit_iv(self.suite, self.write_layer.seq_num())
   } else {
     b""
   }
@@ -370,17 +372,22 @@ fn ServerConn::handle_client_hello(
   self.transcript.update(raw_frame)
   self.client_random = ch.random
   self.server_random = self.prng.next_bytes(b"server-random", 32)
-  // Attempt Session ID resumption if session_store matches
+  // Attempt Session ID resumption if session_store matches and mTLCP policy permits
   match self.config.session_store {
     Some(store) =>
       match store.get(ch.session_id) {
-        Some(rs) =>
-          if self.suite_allowed(rs.cipher_suite) &&
+        Some(rs) => {
+          let mtlcp_ok = !self.config.require_client_cert ||
+            !(rs.peer_certs is None)
+          if is_valid_resumed_session(rs) &&
+            mtlcp_ok &&
+            self.suite_allowed(rs.cipher_suite) &&
             u16_array_contains(ch.cipher_suites, rs.cipher_suite.to_u16()) {
             self.resumed = true
             self.session_id = rs.session_id
             self.suite = Some(rs.cipher_suite)
             self.master_secret = rs.master_secret
+            self.peer_bundle = rs.peer_certs
             let sh = @handshake.ServerHello::{
               version_major: @record.TLCP_VERSION_MAJOR,
               version_minor: @record.TLCP_VERSION_MINOR,
@@ -401,6 +408,7 @@ fn ServerConn::handle_client_hello(
             self.state = WaitClientChangeCipherSpec
             return
           }
+        }
         None => ()
       }
     None => ()
@@ -666,6 +674,12 @@ fn ServerConn::handle_handshake_msg(
           "client Finished verify_data mismatch",
         )
       }
+      if self.hs_buf.length() != 0 {
+        self.fail_protocol(
+          @handshake.UnexpectedMessage,
+          "trailing handshake bytes after client Finished",
+        )
+      }
       self.transcript.update(raw_frame)
       let suite = match self.suite {
         Some(s) => s
@@ -688,6 +702,7 @@ fn ServerConn::handle_handshake_msg(
               session_id: self.session_id,
               cipher_suite: suite,
               master_secret: self.master_secret,
+              peer_certs: self.peer_bundle,
             })
           None => ()
         }
@@ -771,6 +786,13 @@ fn ServerConn::handle_record(
           "unexpected handshake record in current server state",
         )
       }
+      if self.hs_buf.length() + pt.length() >
+        @handshake.MAX_HANDSHAKE_MSG_LEN + 4 {
+        self.fail_protocol(
+          @handshake.DecodeError,
+          "handshake reassembly buffer exceeded MAX_HANDSHAKE_MSG_LEN",
+        )
+      }
       append_bytes(self.hs_buf, pt)
       self.process_handshake_buf(events)
     }
@@ -832,6 +854,12 @@ fn ServerConn::handle_record(
         self.fail_protocol(
           @handshake.UnexpectedMessage,
           "application data received before handshake complete",
+        )
+      }
+      if self.peer_closed {
+        self.fail_protocol(
+          @handshake.UnexpectedMessage,
+          "application data received after peer CloseNotify",
         )
       }
       if pt.length() > 0 {
