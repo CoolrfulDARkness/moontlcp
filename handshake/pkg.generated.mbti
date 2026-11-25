@@ -1,0 +1,206 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/handshake"
+
+import {
+  "CoolrfulDARkness/moontlcp/crypto/sm3",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const CURVE_TYPE_NAMED : Byte = b'\x03'
+
+pub const HT_CERTIFICATE : Byte = b'\x0B'
+
+pub const HT_CERTIFICATE_REQUEST : Byte = b'\x0D'
+
+pub const HT_CERTIFICATE_VERIFY : Byte = b'\x0F'
+
+pub const HT_CLIENT_HELLO : Byte = b'\x01'
+
+pub const HT_CLIENT_KEY_EXCHANGE : Byte = b'\x10'
+
+pub const HT_FINISHED : Byte = b'\x14'
+
+pub const HT_SERVER_HELLO : Byte = b'\x02'
+
+pub const HT_SERVER_HELLO_DONE : Byte = b'\x0E'
+
+pub const HT_SERVER_KEY_EXCHANGE : Byte = b'\x0C'
+
+pub const NAMED_CURVE_SM2P256V1 : UInt32 = 0x0029
+
+pub fn build_ecc_ske_tbs(Bytes, Bytes, Bytes) -> Bytes
+
+pub fn build_ecdhe_params(UInt32, Bytes) -> Bytes
+
+pub fn build_ecdhe_ske_tbs(Bytes, Bytes, Bytes) -> Bytes
+
+pub fn compute_verify_data(Bytes, Bool, Bytes) -> Bytes
+
+pub fn decode_alert(BytesView) -> Alert raise HandshakeError
+
+pub fn decode_handshake_frame(BytesView) -> (Byte, BytesView, Int32) raise HandshakeError
+
+pub fn decode_handshake_msg(Byte, BytesView, Bool) -> HandshakeMsg raise HandshakeError
+
+pub fn derive_key_block(Bytes, Bytes, Bytes, CipherSuite) -> KeyBlock
+
+pub fn derive_master_secret(Bytes, Bytes, Bytes) -> Bytes
+
+pub fn encode_alert(Alert) -> Bytes
+
+pub fn encode_handshake_msg(HandshakeMsg) -> Bytes
+
+pub fn parse_ecdhe_params(BytesView) -> (UInt32, Bytes) raise HandshakeError
+
+// Errors
+#derive(Eq, @debug.Debug)
+pub suberror HandshakeError {
+  Incomplete
+  InvalidMessageType(Byte)
+  InvalidLength
+  InvalidVersion(Byte, Byte)
+  UnsupportedCipherSuite
+  DecodeError(String)
+}
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub(all) struct Alert {
+  level : AlertLevel
+  description : AlertDescription
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) enum AlertDescription {
+  CloseNotify
+  UnexpectedMessage
+  BadRecordMac
+  DecryptionFailed
+  RecordOverflow
+  HandshakeFailure
+  BadCertificate
+  UnsupportedCertificate
+  CertificateExpired
+  CertificateUnknown
+  IllegalParameter
+  UnknownCa
+  DecodeError
+  DecryptError
+  ProtocolVersion
+  InsufficientSecurity
+  InternalError
+  UnsupportedSite2Site
+}
+pub fn AlertDescription::from_byte(Byte) -> Self raise HandshakeError
+pub fn AlertDescription::to_byte(Self) -> Byte
+
+#derive(Eq, @debug.Debug)
+pub(all) enum AlertLevel {
+  Warning
+  Fatal
+}
+pub fn AlertLevel::from_byte(Byte) -> Self raise HandshakeError
+pub fn AlertLevel::to_byte(Self) -> Byte
+
+#derive(Eq, @debug.Debug)
+pub(all) struct CertificateMsg {
+  certificates : Array[Bytes]
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) struct CertificateRequest {
+  cert_types : Bytes
+  ca_names : Array[Bytes]
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) struct CertificateVerify {
+  signature : Bytes
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) enum CipherSuite {
+  EcdheSm4CbcSm3
+  EccSm4CbcSm3
+  EcdheSm4GcmSm3
+  EccSm4GcmSm3
+}
+pub fn CipherSuite::from_u16(UInt32) -> Self?
+pub fn CipherSuite::is_ecdhe(Self) -> Bool
+pub fn CipherSuite::is_gcm(Self) -> Bool
+pub fn CipherSuite::name(Self) -> String
+pub fn CipherSuite::to_u16(Self) -> UInt32
+
+#derive(Eq, @debug.Debug)
+pub(all) struct ClientHello {
+  version_major : Byte
+  version_minor : Byte
+  random : Bytes
+  session_id : Bytes
+  cipher_suites : Array[UInt32]
+  compression_methods : Bytes
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) enum ClientKeyExchange {
+  Ecc(Bytes)
+  Ecdhe(Bytes)
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) struct Finished {
+  verify_data : Bytes
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) enum HandshakeMsg {
+  ClientHello(ClientHello)
+  ServerHello(ServerHello)
+  Certificate(CertificateMsg)
+  ServerKeyExchange(ServerKeyExchange)
+  CertificateRequest(CertificateRequest)
+  ServerHelloDone
+  CertificateVerify(CertificateVerify)
+  ClientKeyExchange(ClientKeyExchange)
+  Finished(Finished)
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) struct KeyBlock {
+  client_mac_key : Bytes
+  server_mac_key : Bytes
+  client_write_key : Bytes
+  server_write_key : Bytes
+  client_write_iv : Bytes
+  server_write_iv : Bytes
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) struct ServerHello {
+  version_major : Byte
+  version_minor : Byte
+  random : Bytes
+  session_id : Bytes
+  cipher_suite : CipherSuite
+  compression_method : Byte
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) enum ServerKeyExchange {
+  Ecc(Bytes)
+  Ecdhe(Bytes, Bytes)
+}
+
+pub struct Transcript {
+  hasher : @sm3.Sm3
+  raw : Array[Byte]
+}
+pub fn Transcript::hash(Self) -> Bytes
+pub fn Transcript::new() -> Self
+pub fn Transcript::raw_bytes(Self) -> Bytes
+pub fn Transcript::update(Self, Bytes) -> Unit
+
+// Type aliases
+
+// Traits
