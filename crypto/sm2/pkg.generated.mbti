@@ -1,0 +1,88 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/crypto/sm2"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const DEFAULT_SM2_ID : Bytes = b"1234567812345678"
+
+pub fn compute_digest(Bytes, PublicKey, Bytes) -> Bytes
+
+pub fn compute_za(Bytes, PublicKey) -> Bytes
+
+pub fn decode_sig_der(Bytes) -> (Bytes, Bytes) raise Sm2Error
+
+pub fn decrypt_asn1(PrivateKey, Bytes) -> Bytes raise Sm2Error
+
+pub fn decrypt_c1c3c2(PrivateKey, Bytes) -> Bytes raise Sm2Error
+
+pub fn derive_keypair_from_seed(Bytes) -> PrivateKey raise Sm2Error
+
+pub fn encode_sig_der(Bytes, Bytes) -> Bytes
+
+pub fn encrypt_asn1(PublicKey, Bytes, Bytes) -> Bytes raise Sm2Error
+
+pub fn encrypt_c1c3c2(PublicKey, Bytes, Bytes) -> Bytes raise Sm2Error
+
+pub fn encrypt_with_k(PublicKey, Bytes, Bytes) -> Bytes raise Sm2Error
+
+pub fn key_exchange_initiator(Bytes, PrivateKey, PrivateKey, Bytes, PublicKey, PublicKey, Int32) -> KeyExchangeResult raise Sm2Error
+
+pub fn key_exchange_responder(Bytes, PrivateKey, PrivateKey, Bytes, PublicKey, PublicKey, Int32) -> KeyExchangeResult raise Sm2Error
+
+pub fn sign_der(PrivateKey, Bytes, Bytes) -> Bytes raise Sm2Error
+
+pub fn sign_deterministic(PrivateKey, Bytes, Bytes) -> (Bytes, Bytes) raise Sm2Error
+
+pub fn sign_with_k(PrivateKey, Bytes, Bytes, Bytes) -> (Bytes, Bytes) raise Sm2Error
+
+pub fn verify_der(PublicKey, Bytes, Bytes, Bytes) -> Bool
+
+pub fn verify_raw(PublicKey, Bytes, Bytes, Bytes, Bytes) -> Bool
+
+// Errors
+#derive(Eq, @debug.Debug)
+pub suberror Sm2Error {
+  InvalidPrivateKey
+  InvalidPublicKey
+  InvalidSignature
+  InvalidCiphertext
+  DecryptionFailed
+  KeyExchangeFailed
+  InvalidLength(Int32)
+}
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub struct KeyExchangeResult {
+  shared_key : Bytes
+  s1 : Bytes
+  s2 : Bytes
+}
+
+pub struct PrivateKey {
+  // private fields
+}
+pub fn PrivateKey::from_bytes(Bytes) -> Self raise Sm2Error
+pub fn PrivateKey::public_key(Self) -> PublicKey
+pub fn PrivateKey::to_bytes(Self) -> Bytes
+pub impl Eq for PrivateKey
+
+#derive(@debug.Debug)
+pub struct PublicKey {
+  // private fields
+}
+pub fn PublicKey::from_bytes(Bytes) -> Self raise Sm2Error
+pub fn PublicKey::is_valid(Self) -> Bool
+pub fn PublicKey::to_compressed_bytes(Self) -> Bytes
+pub fn PublicKey::to_uncompressed_bytes(Self) -> Bytes
+pub fn PublicKey::to_xy_bytes(Self) -> Bytes
+pub fn PublicKey::x_bytes(Self) -> Bytes
+pub fn PublicKey::y_bytes(Self) -> Bytes
+pub impl Eq for PublicKey
+
+// Type aliases
+
+// Traits
