@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/sm9/pairing"
+
+import {
+  "CoolrfulDARkness/moontlcp/sm9/field",
+}
+
+// Values
+pub fn final_exponentiation(@field.Fp12) -> @field.Fp12
+
+pub fn miller_loop(@field.Fp2, @field.Fp2, @field.Fp, @field.Fp) -> @field.Fp12
+
+pub fn pair_coords(@field.Fp2, @field.Fp2, @field.Fp, @field.Fp) -> @field.Fp12
+
+pub fn pair_product_coords(@field.Fp2, @field.Fp2, @field.Fp, @field.Fp, @field.Fp2, @field.Fp2, @field.Fp, @field.Fp) -> @field.Fp12
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

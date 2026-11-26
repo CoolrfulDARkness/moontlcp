@@ -33,6 +33,8 @@ pub fn Sm4Key::cbc_encrypt_raw(Self, Bytes, Bytes) -> Bytes raise Sm4Error
 pub fn Sm4Key::ctr_crypt(Self, Bytes, Bytes) -> Bytes raise Sm4Error
 pub fn Sm4Key::decrypt_block(Self, Bytes) -> Bytes raise Sm4Error
 pub fn Sm4Key::decrypt_block_inplace(Self, FixedArray[Byte], Int32) -> Unit
+pub fn Sm4Key::ecb_decrypt_pkcs7(Self, Bytes) -> Bytes raise Sm4Error
+pub fn Sm4Key::ecb_encrypt_pkcs7(Self, Bytes) -> Bytes
 pub fn Sm4Key::encrypt_block(Self, Bytes) -> Bytes raise Sm4Error
 pub fn Sm4Key::encrypt_block_inplace(Self, FixedArray[Byte], Int32) -> Unit
 pub fn Sm4Key::gcm_decrypt(Self, Bytes, Bytes, Bytes, Bytes) -> Bytes raise Sm4Error

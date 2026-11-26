@@ -1,0 +1,220 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/sm9/field"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const BN_T : UInt64 = 0x600000000058f98a
+
+pub fn adc(UInt64, UInt64, UInt64) -> (UInt64, UInt64)
+
+pub fn ct_mask(Bool) -> UInt64
+
+pub fn gamma_11() -> Fp
+
+pub fn gamma_12() -> Fp
+
+pub fn gamma_13() -> Fp
+
+pub fn gamma_14() -> Fp
+
+pub fn gamma_15() -> Fp
+
+pub fn gamma_21() -> Fp
+
+pub fn gamma_22() -> Fp
+
+pub fn gamma_23() -> Fp
+
+pub fn gamma_24() -> Fp
+
+pub fn mac(UInt64, UInt64, UInt64, UInt64) -> (UInt64, UInt64)
+
+pub let modulus_p : U256
+
+pub let order_n : U256
+
+pub fn sbb(UInt64, UInt64, UInt64) -> (UInt64, UInt64)
+
+pub fn twist_frob_x1() -> Fp
+
+pub fn twist_frob_x2() -> Fp
+
+pub fn twist_frob_y1() -> Fp
+
+pub fn twist_frob_y2() -> Fp
+
+// Errors
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub struct Fn {
+  // private fields
+}
+pub fn Fn::add(Self, Self) -> Self
+pub fn Fn::ct_eq(Self, Self) -> Bool
+pub fn Fn::ct_select(Self, Self, UInt64) -> Self
+pub fn Fn::from_be_bytes_mod(BytesView) -> Self
+pub fn Fn::from_be_bytes_nonzero(BytesView) -> Self?
+pub fn Fn::from_be_bytes_strict(BytesView) -> Self?
+pub fn Fn::from_u256_mod(U256) -> Self
+pub fn Fn::from_u64(UInt64) -> Self
+pub fn Fn::inv(Self) -> Self?
+pub fn Fn::is_one(Self) -> Bool
+pub fn Fn::is_zero(Self) -> Bool
+pub fn Fn::mul(Self, Self) -> Self
+pub fn Fn::neg(Self) -> Self
+pub fn Fn::one() -> Self
+pub fn Fn::sqr(Self) -> Self
+pub fn Fn::sub(Self, Self) -> Self
+pub fn Fn::to_be_bytes(Self) -> Bytes
+pub fn Fn::to_u256(Self) -> U256
+pub fn Fn::zero() -> Self
+
+#derive(Eq, @debug.Debug)
+pub struct Fp {
+  // private fields
+}
+pub fn Fp::add(Self, Self) -> Self
+pub fn Fp::b_const() -> Self
+pub fn Fp::ct_eq(Self, Self) -> Bool
+pub fn Fp::ct_select(Self, Self, UInt64) -> Self
+pub fn Fp::double(Self) -> Self
+pub fn Fp::from_be_bytes_strict(BytesView) -> Self?
+pub fn Fp::from_raw_mont(UInt64, UInt64, UInt64, UInt64) -> Self
+pub fn Fp::from_u256(U256) -> Self
+pub fn Fp::from_u64(UInt64) -> Self
+pub fn Fp::inv(Self) -> Self
+pub fn Fp::inv_checked(Self) -> Self?
+pub fn Fp::is_one(Self) -> Bool
+pub fn Fp::is_zero(Self) -> Bool
+pub fn Fp::is_zero_mask(Self) -> UInt64
+pub fn Fp::mul(Self, Self) -> Self
+pub fn Fp::mul_by_5(Self) -> Self
+pub fn Fp::neg(Self) -> Self
+pub fn Fp::one() -> Self
+pub fn Fp::pow(Self, U256) -> Self
+pub fn Fp::sqr(Self) -> Self
+pub fn Fp::sqrt(Self) -> Self?
+pub fn Fp::sub(Self, Self) -> Self
+pub fn Fp::to_be_bytes(Self) -> Bytes
+pub fn Fp::to_u256(Self) -> U256
+pub fn Fp::triple(Self) -> Self
+pub fn Fp::zero() -> Self
+
+#derive(Eq, @debug.Debug)
+pub struct Fp12 {
+  c0 : Fp6
+  c1 : Fp6
+}
+pub fn Fp12::add(Self, Self) -> Self
+pub fn Fp12::conjugate(Self) -> Self
+pub fn Fp12::ct_eq(Self, Self) -> Bool
+pub fn Fp12::ct_select(Self, Self, UInt64) -> Self
+pub fn Fp12::cyclotomic_pow_t(Self) -> Self
+pub fn Fp12::cyclotomic_pow_u256(Self, U256) -> Self
+pub fn Fp12::cyclotomic_sqr(Self) -> Self
+pub fn Fp12::frobenius_p(Self) -> Self
+pub fn Fp12::frobenius_p2(Self) -> Self
+pub fn Fp12::frobenius_p3(Self) -> Self
+pub fn Fp12::from_bytes_strict(BytesView) -> Self?
+pub fn Fp12::inv(Self) -> Self
+pub fn Fp12::inv_checked(Self) -> Self?
+pub fn Fp12::is_in_cyclotomic_subgroup(Self) -> Bool
+pub fn Fp12::is_one(Self) -> Bool
+pub fn Fp12::is_zero(Self) -> Bool
+pub fn Fp12::mul(Self, Self) -> Self
+pub fn Fp12::mul_by_014(Self, Fp2, Fp2, Fp2) -> Self
+pub fn Fp12::neg(Self) -> Self
+pub fn Fp12::new(Fp6, Fp6) -> Self
+pub fn Fp12::one() -> Self
+pub fn Fp12::pow_u256(Self, U256) -> Self
+pub fn Fp12::sqr(Self) -> Self
+pub fn Fp12::sub(Self, Self) -> Self
+pub fn Fp12::to_bytes(Self) -> Bytes
+pub fn Fp12::zero() -> Self
+
+#derive(Eq, @debug.Debug)
+pub struct Fp2 {
+  c0 : Fp
+  c1 : Fp
+}
+pub fn Fp2::add(Self, Self) -> Self
+pub fn Fp2::b_twist() -> Self
+pub fn Fp2::conjugate(Self) -> Self
+pub fn Fp2::ct_eq(Self, Self) -> Bool
+pub fn Fp2::ct_select(Self, Self, UInt64) -> Self
+pub fn Fp2::double(Self) -> Self
+pub fn Fp2::from_bytes_strict(BytesView) -> Self?
+pub fn Fp2::from_fp(Fp) -> Self
+pub fn Fp2::inv(Self) -> Self
+pub fn Fp2::inv_checked(Self) -> Self?
+pub fn Fp2::is_one(Self) -> Bool
+pub fn Fp2::is_zero(Self) -> Bool
+pub fn Fp2::is_zero_mask(Self) -> UInt64
+pub fn Fp2::mul(Self, Self) -> Self
+pub fn Fp2::mul_by_5u(Self) -> Self
+pub fn Fp2::mul_by_u(Self) -> Self
+pub fn Fp2::mul_fp(Self, Fp) -> Self
+pub fn Fp2::neg(Self) -> Self
+pub fn Fp2::new(Fp, Fp) -> Self
+pub fn Fp2::one() -> Self
+pub fn Fp2::sqr(Self) -> Self
+pub fn Fp2::sub(Self, Self) -> Self
+pub fn Fp2::to_bytes(Self) -> Bytes
+pub fn Fp2::triple(Self) -> Self
+pub fn Fp2::zero() -> Self
+
+#derive(Eq, @debug.Debug)
+pub struct Fp6 {
+  c0 : Fp2
+  c1 : Fp2
+  c2 : Fp2
+}
+pub fn Fp6::add(Self, Self) -> Self
+pub fn Fp6::ct_eq(Self, Self) -> Bool
+pub fn Fp6::ct_select(Self, Self, UInt64) -> Self
+pub fn Fp6::double(Self) -> Self
+pub fn Fp6::frobenius_p(Self) -> Self
+pub fn Fp6::frobenius_p2(Self) -> Self
+pub fn Fp6::from_fp2(Fp2) -> Self
+pub fn Fp6::inv(Self) -> Self
+pub fn Fp6::inv_checked(Self) -> Self?
+pub fn Fp6::is_one(Self) -> Bool
+pub fn Fp6::is_zero(Self) -> Bool
+pub fn Fp6::mul(Self, Self) -> Self
+pub fn Fp6::mul_by_01(Self, Fp2, Fp2) -> Self
+pub fn Fp6::mul_by_1(Self, Fp2) -> Self
+pub fn Fp6::mul_by_s(Self) -> Self
+pub fn Fp6::mul_fp(Self, Fp) -> Self
+pub fn Fp6::neg(Self) -> Self
+pub fn Fp6::new(Fp2, Fp2, Fp2) -> Self
+pub fn Fp6::one() -> Self
+pub fn Fp6::sqr(Self) -> Self
+pub fn Fp6::sub(Self, Self) -> Self
+pub fn Fp6::zero() -> Self
+
+#derive(Eq, @debug.Debug)
+pub struct U256 {
+  d0 : UInt64
+  d1 : UInt64
+  d2 : UInt64
+  d3 : UInt64
+}
+pub fn U256::bit_at(Self, Int32) -> UInt32
+pub fn U256::cmp(Self, Self) -> Int32
+pub fn U256::ct_eq(Self, Self) -> Bool
+pub fn U256::ct_select(Self, Self, UInt64) -> Self
+pub fn U256::from_be_bytes(BytesView) -> Self?
+pub fn U256::from_limbs(UInt64, UInt64, UInt64, UInt64) -> Self
+pub fn U256::from_u64(UInt64) -> Self
+pub fn U256::is_zero(Self) -> Bool
+pub fn U256::one() -> Self
+pub fn U256::to_be_bytes(Self) -> Bytes
+pub fn U256::zero() -> Self
+
+// Type aliases
+
+// Traits

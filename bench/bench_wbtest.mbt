@@ -158,3 +158,214 @@ test "RecordLayer SM4-GCM seal+open 1KB" (b : @bench.T) {
     b.keep(try! reader.open(rec))
   })
 }
+
+///|
+fn bench_sm9_scalar(hex : String) -> @sm9_field.Fn {
+  let bytes = match @sm9.hex_to_bytes(hex) {
+    Some(b) => b
+    None => abort("invalid SM9 bench hex")
+  }
+  match @sm9_field.Fn::from_be_bytes_nonzero(bytes) {
+    Some(v) => v
+    None => abort("invalid SM9 bench scalar")
+  }
+}
+
+///|
+test "SM9 BN256 R-ate pairing e(P2, P1)" (b : @bench.T) {
+  let p1 = @sm9_ec.G1Affine::generator()
+  let p2 = @sm9_ec.G2Affine::generator()
+  b.bench(fn() { b.keep(@sm9.pair(p2, p1)) })
+}
+
+///|
+test "SM9 G1 scalar mul" (b : @bench.T) {
+  let p1 = @sm9_ec.G1Affine::generator()
+  let k = bench_sm9_scalar(
+    "291fe3cac8f58ad2dc462c8d4d578a94dafd5624ddc28e328d2936688a86cf1a",
+  )
+  b.bench(fn() { b.keep(p1.scalar_mul_fn(k)) })
+}
+
+///|
+test "SM9 G2 scalar mul" (b : @bench.T) {
+  let p2 = @sm9_ec.G2Affine::generator()
+  let k = bench_sm9_scalar(
+    "291fe3cac8f58ad2dc462c8d4d578a94dafd5624ddc28e328d2936688a86cf1a",
+  )
+  b.bench(fn() { b.keep(p2.scalar_mul_fn(k)) })
+}
+
+///|
+test "SM9 sign (GB/T 38635.2)" (b : @bench.T) {
+  let master = @sm9.sign_master_from_seed(b"bench-sign-master")
+  let p_pub_s = master.public_key()
+  let ds_a = match @sm9.extract_sign_key(master, b"Alice") {
+    Ok(k) => k
+    Err(e) => abort(e)
+  }
+  let msg = b"Chinese IBS standard"
+  let r = bench_sm9_scalar(
+    "00033c8616b06704813203dfd00965022ed15975c662337aed648835dc4b1cbe",
+  )
+  b.bench(fn() { b.keep(@sm9.sign_with_r(p_pub_s, ds_a, msg, r)) })
+}
+
+///|
+test "SM9 verify (GB/T 38635.2)" (b : @bench.T) {
+  let master = @sm9.sign_master_from_seed(b"bench-sign-master")
+  let p_pub_s = master.public_key()
+  let ds_a = match @sm9.extract_sign_key(master, b"Alice") {
+    Ok(k) => k
+    Err(e) => abort(e)
+  }
+  let msg = b"Chinese IBS standard"
+  let sig = match @sm9.sign(p_pub_s, ds_a, msg) {
+    Ok(s) => s
+    Err(e) => abort(e)
+  }
+  b.bench(fn() { b.keep(@sm9.verify(p_pub_s, b"Alice", msg, sig)) })
+}
+
+///|
+test "SM9 key exchange roundtrip (GB/T 38635.3)" (b : @bench.T) {
+  let master = @sm9.enc_master_from_seed(b"bench-keyex-master")
+  let p_pub_e = master.public_key()
+  let de_a = match @sm9.extract_keyex_key(master, b"Alice") {
+    Ok(k) => k
+    Err(e) => abort(e)
+  }
+  let de_b = match @sm9.extract_keyex_key(master, b"Bob") {
+    Ok(k) => k
+    Err(e) => abort(e)
+  }
+  let r_a = bench_sm9_scalar(
+    "00005879dd1d51e175946f23b1b41e93ba31c584ae59a426ec1046a4d03b06c8",
+  )
+  let r_b = bench_sm9_scalar(
+    "00018b98c44bef9f8537fb7d071b2c928b3bc65bd3d69e1eee213564905634fe",
+  )
+  let ra_pt = match @sm9.keyex_ephemeral(p_pub_e, b"Bob", r_a) {
+    Ok(pt) => pt
+    Err(e) => abort(e)
+  }
+  let rb_pt = match @sm9.keyex_ephemeral(p_pub_e, b"Alice", r_b) {
+    Ok(pt) => pt
+    Err(e) => abort(e)
+  }
+  b.bench(fn() {
+    let resp = match
+      @sm9.keyex_responder(
+        p_pub_e, b"Alice", b"Bob", de_b, r_b, ra_pt, rb_pt, 16,
+      ) {
+      Ok(v) => v
+      Err(e) => abort(e)
+    }
+    let init = match
+      @sm9.keyex_initiator(
+        p_pub_e,
+        b"Alice",
+        b"Bob",
+        de_a,
+        r_a,
+        ra_pt,
+        rb_pt,
+        16,
+        peer_s_b=resp.s_b,
+      ) {
+      Ok(v) => v
+      Err(e) => abort(e)
+    }
+    b.keep(init)
+  })
+}
+
+///|
+test "SM9 KEM encap+decap (GB/T 38635.4)" (b : @bench.T) {
+  let master = @sm9.enc_master_from_seed(b"bench-kem-master")
+  let p_pub_e = master.public_key()
+  let de_b = match @sm9.extract_enc_key(master, b"Bob") {
+    Ok(k) => k
+    Err(e) => abort(e)
+  }
+  let r = bench_sm9_scalar(
+    "000074015f8489c01ef4270456f9e6475bfb602bde7f33fd482ab4e3684a6722",
+  )
+  b.bench(fn() {
+    let encap = match @sm9.kem_encapsulate_with_r(p_pub_e, b"Bob", 32, r) {
+      Ok(v) => v
+      Err(e) => abort(e)
+    }
+    let decap = match @sm9.kem_decapsulate(b"Bob", de_b, encap.c1(), 32) {
+      Ok(k) => k
+      Err(e) => abort(e)
+    }
+    b.keep(decap)
+  })
+}
+
+///|
+test "SM9 PKE KDF-XOR encrypt+decrypt" (b : @bench.T) {
+  let master = @sm9.enc_master_from_seed(b"bench-enc-master")
+  let p_pub_e = master.public_key()
+  let de_b = match @sm9.extract_enc_key(master, b"Bob") {
+    Ok(k) => k
+    Err(e) => abort(e)
+  }
+  let msg = b"Chinese IBE standard"
+  let r = bench_sm9_scalar(
+    "0000aac0541779c8fc45e3e2cb25c12b5d2576b2129ae8bb5ee2cbe5ec9e785c",
+  )
+  b.bench(fn() {
+    let ct = match
+      @sm9.encrypt_with_r(
+        p_pub_e,
+        b"Bob",
+        msg,
+        r,
+        mode=@sm9_enc.EncMode::KdfXor,
+      ) {
+      Ok(c) => c
+      Err(e) => abort(e)
+    }
+    let pt = match
+      @sm9.decrypt(b"Bob", de_b, ct, mode=@sm9_enc.EncMode::KdfXor) {
+      Ok(p) => p
+      Err(e) => abort(e)
+    }
+    b.keep(pt)
+  })
+}
+
+///|
+test "SM9 PKE SM4-ECB-PKCS7 encrypt+decrypt" (b : @bench.T) {
+  let master = @sm9.enc_master_from_seed(b"bench-enc-master")
+  let p_pub_e = master.public_key()
+  let de_b = match @sm9.extract_enc_key(master, b"Bob") {
+    Ok(k) => k
+    Err(e) => abort(e)
+  }
+  let msg = b"Chinese IBE standard"
+  let r = bench_sm9_scalar(
+    "0000aac0541779c8fc45e3e2cb25c12b5d2576b2129ae8bb5ee2cbe5ec9e785c",
+  )
+  b.bench(fn() {
+    let ct = match
+      @sm9.encrypt_with_r(
+        p_pub_e,
+        b"Bob",
+        msg,
+        r,
+        mode=@sm9_enc.EncMode::Sm4EcbPkcs7,
+      ) {
+      Ok(c) => c
+      Err(e) => abort(e)
+    }
+    let pt = match
+      @sm9.decrypt(b"Bob", de_b, ct, mode=@sm9_enc.EncMode::Sm4EcbPkcs7) {
+      Ok(p) => p
+      Err(e) => abort(e)
+    }
+    b.keep(pt)
+  })
+}

@@ -61,3 +61,20 @@ test "HMAC-SM3 and TLCP PRF consistency" {
     assert_eq(prf48[i], prf12[i])
   }
 }
+
+///|
+test "SM3 update_byte and reset reuse" {
+  let msg = Bytes::makei(197, fn(i) { (i & 0xFF).to_byte() })
+  let expected = @sm3.sm3(msg)
+  let h = @sm3.Sm3::new()
+  for i = 0; i < msg.length(); i = i + 1 {
+    h.update_byte(msg[i])
+  }
+  assert_eq(h.finalize(), expected)
+  h.reset()
+  h.update(b"abc")
+  assert_eq(
+    to_hex(h.finalize()),
+    "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0",
+  )
+}

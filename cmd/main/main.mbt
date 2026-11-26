@@ -124,7 +124,7 @@ fn demo_crypto_self_test() -> Unit {
     "====================================================================",
   )
   println(
-    " [1/5] National Standard Cryptography Self-Test (Zero-FFI Pure MBT) ",
+    " [1/6] National Standard Cryptography Self-Test (Zero-FFI Pure MBT) ",
   )
   println(
     "====================================================================",
@@ -237,7 +237,7 @@ fn demo_x509_dual_pki(pki : @x509.TestPki) -> Unit {
     "====================================================================",
   )
   println(
-    " [2/5] GM X.509 v3 Dual-Certificate PKI Generation & Security Audit ",
+    " [2/6] GM X.509 v3 Dual-Certificate PKI Generation & Security Audit ",
   )
   println(
     "====================================================================",
@@ -324,7 +324,7 @@ fn demo_four_suites(pki : @x509.TestPki) -> Unit {
     "====================================================================",
   )
   println(
-    " [3/5] All 4 GM/T 0024-2023 TLCP 1.1 Suites Handshake & Encrypted IO",
+    " [3/6] All 4 GM/T 0024-2023 TLCP 1.1 Suites Handshake & Encrypted IO",
   )
   println(
     "====================================================================",
@@ -401,7 +401,7 @@ fn demo_session_resumption(pki : @x509.TestPki) -> Unit {
     "====================================================================",
   )
   println(
-    " [4/5] TLCP Session ID Abbreviated Handshake Resumption             ",
+    " [4/6] TLCP Session ID Abbreviated Handshake Resumption             ",
   )
   println(
     "====================================================================",
@@ -489,7 +489,7 @@ fn demo_adversarial_drill(pki : @x509.TestPki) -> Unit {
     "====================================================================",
   )
   println(
-    " [5/5] Live Security Adversarial Drill (Fail-Closed & Fatal Alerts) ",
+    " [5/6] Live Security Adversarial Drill (Fail-Closed & Fatal Alerts) ",
   )
   println(
     "====================================================================",
@@ -584,9 +584,181 @@ fn demo_adversarial_drill(pki : @x509.TestPki) -> Unit {
 }
 
 ///|
+fn demo_sm9_ibc_suite() -> Unit {
+  println("")
+  println(
+    "====================================================================",
+  )
+  println(
+    " [6/6] GB/T 38635-2020 SM9 BN256 IBC Suite (Shared SM3/SM4/CT Core) ",
+  )
+  println(
+    "====================================================================",
+  )
+  let id_a = b"Alice"
+  let id_b = b"Bob"
+  let msg = b"Unified GM Suite: TLCP 1.1 PKI + SM9 BN256 IBC"
+  // 1. KGC master key generation & user key extraction + base pairing check
+  let sign_master = @sm9.sign_master_from_seed(b"moontlcp-sm9-demo-sign-kgc")
+  let p_pub_s = sign_master.public_key()
+  let enc_master = @sm9.enc_master_from_seed(b"moontlcp-sm9-demo-enc-kgc")
+  let p_pub_e = enc_master.public_key()
+  let e_base = @sm9.pair(
+    @sm9_ec.G2Affine::generator(),
+    @sm9_ec.G1Affine::generator(),
+  )
+  let pairing_ok = !e_base.is_zero() && !e_base.is_one()
+  let ds_a = match @sm9.extract_sign_key(sign_master, id_a) {
+    Ok(k) => k
+    Err(e) => {
+      println("  SM9 KGC Sign   : [FAIL] " + e)
+      return
+    }
+  }
+  let de_a_kx = match @sm9.extract_keyex_key(enc_master, id_a) {
+    Ok(k) => k
+    Err(e) => {
+      println("  SM9 KGC KeyEx A: [FAIL] " + e)
+      return
+    }
+  }
+  let de_b_kx = match @sm9.extract_keyex_key(enc_master, id_b) {
+    Ok(k) => k
+    Err(e) => {
+      println("  SM9 KGC KeyEx B: [FAIL] " + e)
+      return
+    }
+  }
+  let de_b_enc = match @sm9.extract_enc_key(enc_master, id_b) {
+    Ok(k) => k
+    Err(e) => {
+      println("  SM9 KGC Enc B  : [FAIL] " + e)
+      return
+    }
+  }
+  println(
+    "  SM9 KGC + Pair : e(P2,P1)=384B | ds_A=64B | de_B=128B " +
+    (if pairing_ok { "[PASS]" } else { "[FAIL]" }),
+  )
+  // 2. GB/T 38635.2 SM9 Digital Signature
+  let sig = match @sm9.sign(p_pub_s, ds_a, msg, entropy=b"demo-sm9-sign-ent") {
+    Ok(s) => s
+    Err(e) => {
+      println("  SM9 Sign/Verify: [FAIL] " + e)
+      return
+    }
+  }
+  let sig_ok = @sm9.verify(p_pub_s, id_a, msg, sig) &&
+    !@sm9.verify(p_pub_s, id_a, b"tampered", sig)
+  println(
+    "  SM9 Sign/Verify: " +
+    sig.to_bytes_raw().length().to_string() +
+    "B (h||S) | TamperBlocked " +
+    (if sig_ok { "[PASS]" } else { "[FAIL]" }),
+  )
+  // 3. GB/T 38635.4 SM9 KEM + PKE (KDF-XOR & SM4-ECB-PKCS#7 via shared crypto/sm4)
+  let kem_ent = @lib.sm3_hash(b"moontlcp-sm9-demo-kem-entropy")
+  let kem = match @sm9.kem_encapsulate(p_pub_e, id_b, 32, kem_ent) {
+    Ok(v) => v
+    Err(e) => {
+      println("  SM9 KEM/PKE    : [FAIL] " + e)
+      return
+    }
+  }
+  let kem_ok = match @sm9.kem_decapsulate(id_b, de_b_enc, kem.c1(), 32) {
+    Ok(k) => k == kem.key()
+    Err(_) => false
+  }
+  let xor_ent = @lib.sm3_hash(b"moontlcp-sm9-demo-xor-entropy")
+  let sm4_ent = @lib.sm3_hash(b"moontlcp-sm9-demo-sm4-entropy")
+  let xor_ok = match
+    @sm9.encrypt(p_pub_e, id_b, msg, xor_ent, mode=@sm9_enc.EncMode::KdfXor) {
+    Ok(ct) =>
+      @sm9.decrypt(id_b, de_b_enc, ct, mode=@sm9_enc.EncMode::KdfXor) == Ok(msg) &&
+      @sm9.decrypt(
+        id_b,
+        de_b_enc,
+        flip_byte(ct, 64, 0x01U),
+        mode=@sm9_enc.EncMode::KdfXor,
+      )
+      is Err(_)
+    Err(_) => false
+  }
+  let sm4_ok = match
+    @sm9.encrypt(
+      p_pub_e,
+      id_b,
+      msg,
+      sm4_ent,
+      mode=@sm9_enc.EncMode::Sm4EcbPkcs7,
+    ) {
+    Ok(ct) =>
+      @sm9.decrypt(id_b, de_b_enc, ct, mode=@sm9_enc.EncMode::Sm4EcbPkcs7) ==
+      Ok(msg) &&
+      @sm9.decrypt(
+        id_b,
+        de_b_enc,
+        flip_byte(ct, ct.length() - 1, 0x01U),
+        mode=@sm9_enc.EncMode::Sm4EcbPkcs7,
+      )
+      is Err(_)
+    Err(_) => false
+  }
+  println(
+    "  SM9 KEM + PKE  : KEM-32B=" +
+    (if kem_ok { "OK" } else { "FAIL" }) +
+    " | KDF-XOR=" +
+    (if xor_ok { "OK" } else { "FAIL" }) +
+    " | SM4-ECB=" +
+    (if sm4_ok { "OK" } else { "FAIL" }) +
+    " " +
+    (if kem_ok && xor_ok && sm4_ok { "[PASS]" } else { "[FAIL]" }),
+  )
+  // 4. GB/T 38635.3 SM9 Key Exchange with mutual confirmation (S_B/S_1 & S_A/S_2)
+  let r_a = @sm9_field.Fn::from_u64(0x2026040112345679UL)
+  let r_b = @sm9_field.Fn::from_u64(0x2026040198765433UL)
+  let kx_ok = match
+    (
+      @sm9.keyex_ephemeral(p_pub_e, id_b, r_a),
+      @sm9.keyex_ephemeral(p_pub_e, id_a, r_b),
+    ) {
+    (Ok(ra_pt), Ok(rb_pt)) =>
+      match
+        @sm9.keyex_responder(
+          p_pub_e, id_a, id_b, de_b_kx, r_b, ra_pt, rb_pt, 32,
+        ) {
+        Ok(resp) =>
+          match
+            @sm9.keyex_initiator(
+              p_pub_e,
+              id_a,
+              id_b,
+              de_a_kx,
+              r_a,
+              ra_pt,
+              rb_pt,
+              32,
+              peer_s_b=resp.s_b,
+            ) {
+            Ok(init) =>
+              resp.sk == init.sk &&
+              @sm9.keyex_verify_confirmation(resp.s_2, init.s_a)
+            Err(_) => false
+          }
+        Err(_) => false
+      }
+    _ => false
+  }
+  println(
+    "  SM9 KeyExchange: 32B SK + Mutual S1/S2 Confirm " +
+    (if kx_ok { "[PASS]" } else { "[FAIL]" }),
+  )
+}
+
+///|
 fn main {
   println(
-    "MoonTLCP v0.1.0 — Pure MoonBit Sans-I/O GM/T 0024-2023 (TLCP 1.1) Stack",
+    "MoonTLCP v0.1.0 — Pure MoonBit Unified GM Stack (TLCP 1.1 PKI + SM9 BN256 IBC)",
   )
   demo_crypto_self_test()
   let _ = try {
@@ -595,8 +767,11 @@ fn main {
     demo_four_suites(pki)
     demo_session_resumption(pki)
     demo_adversarial_drill(pki)
+    demo_sm9_ibc_suite()
     println("")
-    println("All MoonTLCP live verification stages completed successfully.")
+    println(
+      "All 6 MoonTLCP + SM9 live verification stages completed successfully.",
+    )
   } catch {
     _ => println("ERROR: failed to initialize demo PKI")
   }

@@ -1,0 +1,90 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/sm9"
+
+import {
+  "CoolrfulDARkness/moontlcp/sm9/ec",
+  "CoolrfulDARkness/moontlcp/sm9/enc",
+  "CoolrfulDARkness/moontlcp/sm9/field",
+  "CoolrfulDARkness/moontlcp/sm9/keyex",
+  "CoolrfulDARkness/moontlcp/sm9/kgc",
+  "CoolrfulDARkness/moontlcp/sm9/sign",
+}
+
+// Values
+pub const HID_ENC : Byte = b'\x03'
+
+pub const HID_KEYEX : Byte = b'\x02'
+
+pub const HID_SIGN : Byte = b'\x01'
+
+pub const MIN_ENTROPY_LEN : Int32 = 32
+
+pub fn bytes_to_hex(BytesView) -> String
+
+pub fn ct_eq_bytes(BytesView, BytesView) -> Bool
+
+pub fn decrypt(BytesView, @kgc.EncUserPrivateKey, BytesView, mode? : @enc.EncMode) -> Result[Bytes, String]
+
+pub fn enc_master_from_bytes(BytesView) -> @kgc.EncMasterPrivateKey?
+
+pub fn enc_master_from_seed(BytesView) -> @kgc.EncMasterPrivateKey
+
+pub fn encrypt(@kgc.EncMasterPublicKey, BytesView, BytesView, BytesView, mode? : @enc.EncMode, hid? : Byte) -> Result[Bytes, String]
+
+pub fn encrypt_with_r(@kgc.EncMasterPublicKey, BytesView, BytesView, @field.Fn, mode? : @enc.EncMode, hid? : Byte) -> Result[Bytes, String]
+
+pub fn extract_enc_key(@kgc.EncMasterPrivateKey, BytesView, hid? : Byte) -> Result[@kgc.EncUserPrivateKey, String]
+
+pub fn extract_keyex_key(@kgc.EncMasterPrivateKey, BytesView, hid? : Byte) -> Result[@kgc.EncUserPrivateKey, String]
+
+pub fn extract_sign_key(@kgc.SignMasterPrivateKey, BytesView, hid? : Byte) -> Result[@kgc.SignUserPrivateKey, String]
+
+pub fn hex_to_bytes(String) -> Bytes?
+
+pub fn kdf(BytesView, Int32) -> Bytes
+
+pub fn kem_decapsulate(BytesView, @kgc.EncUserPrivateKey, @ec.G1Affine, Int32) -> Result[Bytes, String]
+
+pub fn kem_encapsulate(@kgc.EncMasterPublicKey, BytesView, Int32, BytesView, hid? : Byte) -> Result[@enc.KemOutput, String]
+
+pub fn kem_encapsulate_with_r(@kgc.EncMasterPublicKey, BytesView, Int32, @field.Fn, hid? : Byte) -> Result[@enc.KemOutput, String]
+
+pub fn keyex_ephemeral(@kgc.EncMasterPublicKey, BytesView, @field.Fn, hid? : Byte) -> Result[@ec.G1Affine, String]
+
+pub fn keyex_initiator(@kgc.EncMasterPublicKey, BytesView, BytesView, @kgc.EncUserPrivateKey, @field.Fn, @ec.G1Affine, @ec.G1Affine, Int32, peer_s_b? : BytesView) -> Result[@keyex.InitiatorResult, String]
+
+pub fn keyex_responder(@kgc.EncMasterPublicKey, BytesView, BytesView, @kgc.EncUserPrivateKey, @field.Fn, @ec.G1Affine, @ec.G1Affine, Int32) -> Result[@keyex.ResponderResult, String]
+
+pub fn keyex_verify_confirmation(BytesView, BytesView) -> Bool
+
+pub fn mac(BytesView, BytesView) -> Bytes
+
+pub fn pair(@ec.G2Affine, @ec.G1Affine) -> @field.Fp12
+
+pub fn pair_product(@ec.G2Affine, @ec.G1Affine, @ec.G2Affine, @ec.G1Affine) -> @field.Fp12
+
+pub fn sign(@kgc.SignMasterPublicKey, @kgc.SignUserPrivateKey, BytesView, entropy? : BytesView) -> Result[@sign.Signature, String]
+
+pub fn sign_master_from_bytes(BytesView) -> @kgc.SignMasterPrivateKey?
+
+pub fn sign_master_from_seed(BytesView) -> @kgc.SignMasterPrivateKey
+
+pub fn sign_with_r(@kgc.SignMasterPublicKey, @kgc.SignUserPrivateKey, BytesView, @field.Fn) -> Result[@sign.Signature, String]
+
+pub fn sm3_hash(BytesView) -> Bytes
+
+pub fn sm3_hex(BytesView) -> String
+
+pub fn sm4_decrypt_ecb_pkcs7(BytesView, BytesView) -> Bytes?
+
+pub fn sm4_encrypt_ecb_pkcs7(BytesView, BytesView) -> Bytes?
+
+pub fn verify(@kgc.SignMasterPublicKey, BytesView, BytesView, @sign.Signature, hid? : Byte) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

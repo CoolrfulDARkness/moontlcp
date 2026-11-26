@@ -106,3 +106,109 @@ test "SM4-CBC PKCS#7 round-trip and bad padding rejection" {
   }
   assert_true(rejected)
 }
+
+///|
+test "GB/T 38635.4 Appendix A.3 SM4-ECB-PKCS#7 official vector and boundary round-trips" {
+  let k1 = from_hex("58373260f067ec48667c21c144f8bc33")
+  let msg = b"Chinese IBE standard"
+  let sm4_a3 = @sm4.Sm4Key::new(k1)
+  let c2 = sm4_a3.ecb_encrypt_pkcs7(msg)
+  assert_eq(c2.length(), 32)
+  assert_eq(
+    to_hex(c2),
+    "e05b6fac6f11b965268c994f00dba7a8bb00fd60583546cbdf4649250863f10a",
+  )
+  assert_eq(sm4_a3.ecb_decrypt_pkcs7(c2), msg)
+  // Boundary sweep 0..=48 bytes covering every pad length 1..=16 across 1..=4 blocks
+  let key = from_hex("0123456789abcdeffedcba9876543210")
+  let sm4 = @sm4.Sm4Key::new(key)
+  let full_pad16 = Bytes::makei(16, fn(_) { b'\x10' })
+  let ct_empty = sm4.ecb_encrypt_pkcs7(b"")
+  assert_eq(ct_empty, sm4.encrypt_block(full_pad16))
+  assert_eq(sm4.ecb_decrypt_pkcs7(ct_empty), b"")
+  let block16 = from_hex("0123456789abcdeffedcba9876543210")
+  let ct_16 = sm4.ecb_encrypt_pkcs7(block16)
+  assert_eq(ct_16.length(), 32)
+  assert_eq(to_hex(ct_16[0:16].to_owned()), "681edf34d206965e86b3e94f536e4246")
+  assert_eq(ct_16[16:32].to_owned(), sm4.encrypt_block(full_pad16))
+  assert_eq(sm4.ecb_decrypt_pkcs7(ct_16), block16)
+  for len = 0; len <= 48; len = len + 1 {
+    let pt = Bytes::makei(len, fn(i) { ((i * 37 + 11) & 0xFF).to_byte() })
+    let ct = sm4.ecb_encrypt_pkcs7(pt)
+    assert_eq(ct.length(), (len / 16 + 1) * 16)
+    assert_eq(sm4.ecb_decrypt_pkcs7(ct), pt)
+  }
+}
+
+///|
+test "SM4-ECB-PKCS#7 adversarial length and padding tampering rejection" {
+  let key = from_hex("58373260f067ec48667c21c144f8bc33")
+  let sm4 = @sm4.Sm4Key::new(key)
+  // Empty and non-multiple-of-16 lengths rejected with InvalidBlockLength
+  for n in [0, 1, 15, 17, 31, 33] {
+    let ct = Bytes::makei(n, fn(i) { i.to_byte() })
+    let bad_len = try {
+      ignore(sm4.ecb_decrypt_pkcs7(ct))
+      false
+    } catch {
+      @sm4.InvalidBlockLength(_) => true
+      _ => false
+    }
+    assert_true(bad_len)
+  }
+  // Crafted invalid pad bytes: 0x00, 0x11 (17), 0xff (255)
+  let bad_blocks : Array[Bytes] = [
+    Bytes::makei(16, fn(i) { if i < 15 { b'\x41' } else { b'\x00' } }),
+    Bytes::makei(16, fn(_) { b'\x11' }),
+    Bytes::makei(16, fn(_) { b'\xff' }),
+  ]
+  for blk in bad_blocks {
+    let ct = sm4.encrypt_block(blk)
+    let rej = try {
+      ignore(sm4.ecb_decrypt_pkcs7(ct))
+      false
+    } catch {
+      @sm4.InvalidPadding => true
+      _ => false
+    }
+    assert_true(rej)
+  }
+  // Inconsistent padding bytes across all valid pad lengths 2..=16
+  for pad = 2; pad <= 16; pad = pad + 1 {
+    for corrupt_offset = 1
+        corrupt_offset < pad
+        corrupt_offset = corrupt_offset + 1 {
+      let arr = FixedArray::make(16, b'\x41')
+      for j = 16 - pad; j < 16; j = j + 1 {
+        arr[j] = pad.to_byte()
+      }
+      arr[15 - corrupt_offset] = (pad ^ 1).to_byte()
+      let ct = sm4.encrypt_block(Bytes::from_array(arr))
+      let rej = try {
+        ignore(sm4.ecb_decrypt_pkcs7(ct))
+        false
+      } catch {
+        @sm4.InvalidPadding => true
+        _ => false
+      }
+      assert_true(rej)
+    }
+  }
+  // Bit-flip on GB/T 38635.4 A.3 ciphertext
+  let valid_c2 = sm4.ecb_encrypt_pkcs7(b"Chinese IBE standard")
+  let tampered = Bytes::makei(valid_c2.length(), fn(i) {
+    if i == valid_c2.length() - 1 {
+      (valid_c2[i].to_int() ^ 0x01).to_byte()
+    } else {
+      valid_c2[i]
+    }
+  })
+  let flip_rej = try {
+    ignore(sm4.ecb_decrypt_pkcs7(tampered))
+    false
+  } catch {
+    @sm4.InvalidPadding => true
+    _ => false
+  }
+  assert_true(flip_rej)
+}

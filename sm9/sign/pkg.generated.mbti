@@ -1,0 +1,42 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/sm9/sign"
+
+import {
+  "CoolrfulDARkness/moontlcp/sm9/ec",
+  "CoolrfulDARkness/moontlcp/sm9/field",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn precompute_g(@ec.G2Affine) -> @field.Fp12
+
+pub fn sign_deterministic(@ec.G2Affine, @ec.G1Affine, BytesView, BytesView) -> Result[Signature, String]
+
+pub fn sign_with_r(@ec.G2Affine, @ec.G1Affine, BytesView, @field.Fn) -> Result[Signature, String]
+
+pub fn sign_with_r_precomputed(@field.Fp12, @ec.G1Affine, BytesView, @field.Fn) -> Result[Signature, String]
+
+pub fn verify(@ec.G2Affine, BytesView, BytesView, Signature, hid? : Byte) -> Bool
+
+pub fn verify_precomputed(@ec.G2Affine, @field.Fp12, BytesView, BytesView, Signature, hid? : Byte) -> Bool
+
+// Errors
+
+// Types and methods
+#derive(@debug.Debug)
+pub struct Signature {
+  // private fields
+}
+pub fn Signature::ct_eq(Self, Self) -> Bool
+pub fn Signature::from_bytes_raw_strict(BytesView) -> Self?
+pub fn Signature::from_bytes_uncompressed_strict(BytesView) -> Self?
+pub fn Signature::h(Self) -> @field.Fn
+pub fn Signature::new_checked(@field.Fn, @ec.G1Affine) -> Self?
+pub fn Signature::s(Self) -> @ec.G1Affine
+pub fn Signature::to_bytes_raw(Self) -> Bytes
+pub fn Signature::to_bytes_uncompressed(Self) -> Bytes
+pub impl Eq for Signature
+
+// Type aliases
+
+// Traits

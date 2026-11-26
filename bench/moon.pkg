@@ -4,5 +4,9 @@ import {
   "CoolrfulDARkness/moontlcp/crypto/sm4",
   "CoolrfulDARkness/moontlcp/record",
   "CoolrfulDARkness/moontlcp/x509",
+  "CoolrfulDARkness/moontlcp/sm9",
+  "CoolrfulDARkness/moontlcp/sm9/ec" @sm9_ec,
+  "CoolrfulDARkness/moontlcp/sm9/enc" @sm9_enc,
+  "CoolrfulDARkness/moontlcp/sm9/field" @sm9_field,
   "moonbitlang/core/bench",
 } for "wbtest"

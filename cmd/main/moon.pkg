@@ -6,6 +6,10 @@ import {
   "CoolrfulDARkness/moontlcp/record",
   "CoolrfulDARkness/moontlcp/state",
   "CoolrfulDARkness/moontlcp/x509",
+  "CoolrfulDARkness/moontlcp/sm9",
+  "CoolrfulDARkness/moontlcp/sm9/enc" @sm9_enc,
+  "CoolrfulDARkness/moontlcp/sm9/field" @sm9_field,
+  "CoolrfulDARkness/moontlcp/sm9/ec" @sm9_ec,
 }
 
 pkgtype(kind: "executable")

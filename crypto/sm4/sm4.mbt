@@ -227,6 +227,64 @@ pub fn Sm4Key::decrypt_block(
 }
 
 ///|
+/// SM4-ECB encryption with PKCS#7 padding (1..16 bytes, GB/T 32907-2016 / GB/T 38635.4).
+pub fn Sm4Key::ecb_encrypt_pkcs7(self : Sm4Key, plaintext : Bytes) -> Bytes {
+  let plen = plaintext.length()
+  let pad_len = SM4_BLOCK_SIZE - plen % SM4_BLOCK_SIZE
+  let total_len = plen + pad_len
+  let out = FixedArray::make(total_len, pad_len.to_byte())
+  for i = 0; i < plen; i = i + 1 {
+    out[i] = plaintext[i]
+  }
+  let mut off = 0
+  while off < total_len {
+    self.encrypt_block_inplace(out, off)
+    off = off + SM4_BLOCK_SIZE
+  }
+  Bytes::from_array(out)
+}
+
+///|
+/// SM4-ECB decryption with constant-time PKCS#7 padding verification (GB/T 32907-2016 / GB/T 38635.4).
+pub fn Sm4Key::ecb_decrypt_pkcs7(
+  self : Sm4Key,
+  ciphertext : Bytes,
+) -> Bytes raise Sm4Error {
+  let clen = ciphertext.length()
+  if clen == 0 || clen % SM4_BLOCK_SIZE != 0 {
+    raise InvalidBlockLength(clen)
+  }
+  let dec = FixedArray::make(clen, b'\x00')
+  for i = 0; i < clen; i = i + 1 {
+    dec[i] = ciphertext[i]
+  }
+  let mut off = 0
+  while off < clen {
+    self.decrypt_block_inplace(dec, off)
+    off = off + SM4_BLOCK_SIZE
+  }
+  let pad_len = dec[clen - 1].to_uint()
+  // Valid PKCS#7 pad_len must satisfy 1 <= pad_len <= 16
+  let mut good = @ct.ct_lt_u32(0U, pad_len) & @ct.ct_lt_u32(pad_len, 17U)
+  // Always inspect all last 16 bytes in constant time
+  for i = 0; i < 16; i = i + 1 {
+    let in_pad = @ct.ct_lt_u32(i.reinterpret_as_uint(), pad_len)
+    let b = dec[clen - 1 - i].to_uint()
+    let byte_ok = @ct.ct_eq_u32(b, pad_len)
+    good = good & @ct.ct_select_u32(in_pad, byte_ok, 1U)
+  }
+  if good == 0U {
+    raise InvalidPadding
+  }
+  let out_len = clen - pad_len.reinterpret_as_int()
+  let out = FixedArray::make(out_len, b'\x00')
+  for i = 0; i < out_len; i = i + 1 {
+    out[i] = dec[i]
+  }
+  Bytes::from_array(out)
+}
+
+///|
 /// Raw SM4-CBC encryption (no padding added; `data.length()` must be a multiple of 16).
 pub fn Sm4Key::cbc_encrypt_raw(
   self : Sm4Key,

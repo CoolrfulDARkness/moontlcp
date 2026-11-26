@@ -150,6 +150,36 @@ fn Sm3::compress(self : Sm3) -> Unit {
 }
 
 ///|
+/// Resets the SM3 hasher back to the initial GB/T 32905 IV.
+pub fn Sm3::reset(self : Sm3) -> Unit {
+  self.state[0] = 0x7380166FU
+  self.state[1] = 0x4914B2B9U
+  self.state[2] = 0x172442D7U
+  self.state[3] = 0xDA8A0600U
+  self.state[4] = 0xA96F30BCU
+  self.state[5] = 0x163138AAU
+  self.state[6] = 0xE38DEE4DU
+  self.state[7] = 0xB0FB0E4EU
+  for i = 0; i < 64; i = i + 1 {
+    self.block[i] = b'\x00'
+  }
+  self.block_len = 0
+  self.total_len = 0UL
+}
+
+///|
+/// Feeds a single byte into the SM3 hasher.
+pub fn Sm3::update_byte(self : Sm3, b : Byte) -> Unit {
+  self.block[self.block_len] = b
+  self.block_len = self.block_len + 1
+  self.total_len = self.total_len + 1UL
+  if self.block_len == 64 {
+    self.compress()
+    self.block_len = 0
+  }
+}
+
+///|
 /// Feeds a `BytesView` chunk into the SM3 hasher.
 pub fn Sm3::update_view(self : Sm3, data : BytesView) -> Unit {
   let len = data.length()

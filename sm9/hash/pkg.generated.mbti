@@ -1,0 +1,43 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/sm9/hash"
+
+// Values
+pub fn bytes_to_hex(BytesView) -> String
+
+pub fn ct_eq_bytes(BytesView, BytesView) -> Bool
+
+pub fn h1(BytesView, BytesView) -> Bytes
+
+pub fn h1_hash40(BytesView) -> Bytes
+
+pub fn h2(BytesView, BytesView) -> Bytes
+
+pub fn h2_hash40(BytesView) -> Bytes
+
+pub fn hash(BytesView) -> Bytes
+
+pub fn hash_hex(BytesView) -> String
+
+pub fn hex_to_bytes(String) -> Bytes?
+
+pub fn hv_bytes(Byte, BytesView, Int32) -> Bytes
+
+pub fn kdf(BytesView, Int32) -> Bytes
+
+pub fn mac(BytesView, BytesView) -> Bytes
+
+// Errors
+
+// Types and methods
+pub struct Sm3 {
+  // private fields
+}
+pub fn Sm3::finalize(Self) -> Bytes
+pub fn Sm3::new() -> Self
+pub fn Sm3::reset(Self) -> Unit
+pub fn Sm3::update(Self, BytesView) -> Unit
+pub fn Sm3::update_byte(Self, Byte) -> Unit
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/sm9/keyex"
+
+import {
+  "CoolrfulDARkness/moontlcp/sm9/ec",
+  "CoolrfulDARkness/moontlcp/sm9/field",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const MAX_KDF_LEN : Int32 = 16_777_216
+
+pub fn generate_ephemeral(@ec.G1Affine, BytesView, @field.Fn, hid? : Byte) -> Result[@ec.G1Affine, String]
+
+pub fn initiator_exchange(@ec.G1Affine, BytesView, BytesView, @ec.G2Affine, @field.Fn, @ec.G1Affine, @ec.G1Affine, Int32, peer_s_b? : BytesView) -> Result[InitiatorResult, String]
+
+pub fn responder_exchange(@ec.G1Affine, BytesView, BytesView, @ec.G2Affine, @field.Fn, @ec.G1Affine, @ec.G1Affine, Int32) -> Result[ResponderResult, String]
+
+pub fn verify_responder_confirmation(BytesView, BytesView) -> Bool
+
+// Errors
+
+// Types and methods
+#derive(@debug.Debug)
+pub struct InitiatorResult {
+  sk : Bytes
+  s_a : Bytes
+  s_1 : Bytes
+}
+pub fn InitiatorResult::ct_eq(Self, Self) -> Bool
+pub impl Eq for InitiatorResult
+
+#derive(@debug.Debug)
+pub struct ResponderResult {
+  sk : Bytes
+  s_b : Bytes
+  s_2 : Bytes
+}
+pub fn ResponderResult::ct_eq(Self, Self) -> Bool
+pub impl Eq for ResponderResult
+
+// Type aliases
+
+// Traits

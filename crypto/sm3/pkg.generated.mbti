@@ -30,7 +30,9 @@ pub struct Sm3 {
 pub fn Sm3::clone(Self) -> Self
 pub fn Sm3::finalize(Self) -> Bytes
 pub fn Sm3::new() -> Self
+pub fn Sm3::reset(Self) -> Unit
 pub fn Sm3::update(Self, Bytes) -> Unit
+pub fn Sm3::update_byte(Self, Byte) -> Unit
 pub fn Sm3::update_view(Self, BytesView) -> Unit
 
 // Type aliases

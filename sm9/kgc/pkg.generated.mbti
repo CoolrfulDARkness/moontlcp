@@ -1,0 +1,109 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/sm9/kgc"
+
+import {
+  "CoolrfulDARkness/moontlcp/sm9/ec",
+  "CoolrfulDARkness/moontlcp/sm9/field",
+}
+
+// Values
+pub const HID_ENC : Byte = b'\x03'
+
+pub const HID_KEYEX : Byte = b'\x02'
+
+pub const HID_SIGN : Byte = b'\x01'
+
+pub fn derive_enc_user_public_point(EncMasterPublicKey, BytesView, Byte) -> @ec.G1Affine
+
+pub fn derive_sign_user_public_point(SignMasterPublicKey, BytesView, hid? : Byte) -> @ec.G2Affine
+
+pub fn extract_enc_private_key(EncMasterPrivateKey, BytesView, hid? : Byte) -> Result[EncUserPrivateKey, String]
+
+pub fn extract_keyex_private_key(EncMasterPrivateKey, BytesView, hid? : Byte) -> Result[EncUserPrivateKey, String]
+
+pub fn extract_sign_private_key(SignMasterPrivateKey, BytesView, hid? : Byte) -> Result[SignUserPrivateKey, String]
+
+pub fn h1_scalar(BytesView, Byte) -> @field.Fn
+
+pub fn pair(@ec.G2Affine, @ec.G1Affine) -> @field.Fp12
+
+// Errors
+
+// Types and methods
+pub struct EncMasterPrivateKey {
+  // private fields
+}
+pub fn EncMasterPrivateKey::ct_eq(Self, Self) -> Bool
+pub fn EncMasterPrivateKey::from_bytes_strict(BytesView) -> Self?
+pub fn EncMasterPrivateKey::from_fn(@field.Fn) -> Self?
+pub fn EncMasterPrivateKey::from_seed(BytesView) -> Self
+pub fn EncMasterPrivateKey::public_key(Self) -> EncMasterPublicKey
+pub fn EncMasterPrivateKey::scalar(Self) -> @field.Fn
+pub fn EncMasterPrivateKey::to_bytes(Self) -> Bytes
+pub impl Eq for EncMasterPrivateKey
+
+pub struct EncMasterPublicKey {
+  // private fields
+}
+pub fn EncMasterPublicKey::ct_eq(Self, Self) -> Bool
+pub fn EncMasterPublicKey::from_bytes_raw_strict(BytesView) -> Self?
+pub fn EncMasterPublicKey::from_bytes_uncompressed_strict(BytesView) -> Self?
+pub fn EncMasterPublicKey::from_g1(@ec.G1Affine) -> Self?
+pub fn EncMasterPublicKey::precompute_g(Self) -> @field.Fp12
+pub fn EncMasterPublicKey::to_bytes_raw(Self) -> Bytes
+pub fn EncMasterPublicKey::to_bytes_uncompressed(Self) -> Bytes
+pub fn EncMasterPublicKey::to_g1(Self) -> @ec.G1Affine
+pub impl Eq for EncMasterPublicKey
+
+pub struct EncUserPrivateKey {
+  // private fields
+}
+pub fn EncUserPrivateKey::ct_eq(Self, Self) -> Bool
+pub fn EncUserPrivateKey::from_bytes_raw_strict(BytesView) -> Self?
+pub fn EncUserPrivateKey::from_bytes_uncompressed_strict(BytesView) -> Self?
+pub fn EncUserPrivateKey::from_g2(@ec.G2Affine) -> Self?
+pub fn EncUserPrivateKey::to_bytes_raw(Self) -> Bytes
+pub fn EncUserPrivateKey::to_bytes_uncompressed(Self) -> Bytes
+pub fn EncUserPrivateKey::to_g2(Self) -> @ec.G2Affine
+pub impl Eq for EncUserPrivateKey
+
+pub struct SignMasterPrivateKey {
+  // private fields
+}
+pub fn SignMasterPrivateKey::ct_eq(Self, Self) -> Bool
+pub fn SignMasterPrivateKey::from_bytes_strict(BytesView) -> Self?
+pub fn SignMasterPrivateKey::from_fn(@field.Fn) -> Self?
+pub fn SignMasterPrivateKey::from_seed(BytesView) -> Self
+pub fn SignMasterPrivateKey::public_key(Self) -> SignMasterPublicKey
+pub fn SignMasterPrivateKey::scalar(Self) -> @field.Fn
+pub fn SignMasterPrivateKey::to_bytes(Self) -> Bytes
+pub impl Eq for SignMasterPrivateKey
+
+pub struct SignMasterPublicKey {
+  // private fields
+}
+pub fn SignMasterPublicKey::ct_eq(Self, Self) -> Bool
+pub fn SignMasterPublicKey::from_bytes_raw_strict(BytesView) -> Self?
+pub fn SignMasterPublicKey::from_bytes_uncompressed_strict(BytesView) -> Self?
+pub fn SignMasterPublicKey::from_g2(@ec.G2Affine) -> Self?
+pub fn SignMasterPublicKey::precompute_g(Self) -> @field.Fp12
+pub fn SignMasterPublicKey::to_bytes_raw(Self) -> Bytes
+pub fn SignMasterPublicKey::to_bytes_uncompressed(Self) -> Bytes
+pub fn SignMasterPublicKey::to_g2(Self) -> @ec.G2Affine
+pub impl Eq for SignMasterPublicKey
+
+pub struct SignUserPrivateKey {
+  // private fields
+}
+pub fn SignUserPrivateKey::ct_eq(Self, Self) -> Bool
+pub fn SignUserPrivateKey::from_bytes_raw_strict(BytesView) -> Self?
+pub fn SignUserPrivateKey::from_bytes_uncompressed_strict(BytesView) -> Self?
+pub fn SignUserPrivateKey::from_g1(@ec.G1Affine) -> Self?
+pub fn SignUserPrivateKey::to_bytes_raw(Self) -> Bytes
+pub fn SignUserPrivateKey::to_bytes_uncompressed(Self) -> Bytes
+pub fn SignUserPrivateKey::to_g1(Self) -> @ec.G1Affine
+pub impl Eq for SignUserPrivateKey
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,109 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/sm9/ec"
+
+import {
+  "CoolrfulDARkness/moontlcp/sm9/field",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+#derive(@debug.Debug)
+pub struct G1Affine {
+  // private fields
+}
+pub fn G1Affine::ct_eq(Self, Self) -> Bool
+pub fn G1Affine::ct_select(Self, Self, UInt64) -> Self
+pub fn G1Affine::from_bytes_compressed_strict(BytesView) -> Self?
+pub fn G1Affine::from_bytes_raw_strict(BytesView) -> Self?
+pub fn G1Affine::from_bytes_uncompressed_strict(BytesView) -> Self?
+pub fn G1Affine::from_coords_checked(@field.Fp, @field.Fp) -> Self?
+pub fn G1Affine::generator() -> Self
+pub fn G1Affine::identity() -> Self
+pub fn G1Affine::is_infinity(Self) -> Bool
+pub fn G1Affine::is_on_curve(Self) -> Bool
+pub fn G1Affine::neg(Self) -> Self
+pub fn G1Affine::scalar_mul(Self, @field.U256) -> G1Jac
+pub fn G1Affine::scalar_mul_fn(Self, @field.Fn) -> G1Jac
+pub fn G1Affine::to_bytes_compressed(Self) -> Bytes
+pub fn G1Affine::to_bytes_raw(Self) -> Bytes
+pub fn G1Affine::to_bytes_uncompressed(Self) -> Bytes
+pub fn G1Affine::to_jac(Self) -> G1Jac
+pub fn G1Affine::x(Self) -> @field.Fp
+pub fn G1Affine::y(Self) -> @field.Fp
+pub impl Eq for G1Affine
+
+#derive(@debug.Debug)
+pub struct G1Jac {
+  // private fields
+}
+pub fn G1Jac::add(Self, Self) -> Self
+pub fn G1Jac::add_mixed(Self, G1Affine) -> Self
+pub fn G1Jac::ct_eq(Self, Self) -> Bool
+pub fn G1Jac::ct_select(Self, Self, UInt64) -> Self
+pub fn G1Jac::double(Self) -> Self
+pub fn G1Jac::generator() -> Self
+pub fn G1Jac::identity() -> Self
+pub fn G1Jac::is_identity(Self) -> Bool
+pub fn G1Jac::neg(Self) -> Self
+pub fn G1Jac::scalar_mul(Self, @field.U256) -> Self
+pub fn G1Jac::scalar_mul_fn(Self, @field.Fn) -> Self
+pub fn G1Jac::sub(Self, Self) -> Self
+pub fn G1Jac::to_affine(Self) -> G1Affine
+pub fn G1Jac::x(Self) -> @field.Fp
+pub fn G1Jac::y(Self) -> @field.Fp
+pub fn G1Jac::z(Self) -> @field.Fp
+pub impl Eq for G1Jac
+
+#derive(@debug.Debug)
+pub struct G2Affine {
+  // private fields
+}
+pub fn G2Affine::ct_eq(Self, Self) -> Bool
+pub fn G2Affine::ct_select(Self, Self, UInt64) -> Self
+pub fn G2Affine::from_bytes_raw_strict(BytesView) -> Self?
+pub fn G2Affine::from_bytes_uncompressed_strict(BytesView) -> Self?
+pub fn G2Affine::from_coords_checked(@field.Fp2, @field.Fp2) -> Self?
+pub fn G2Affine::generator() -> Self
+pub fn G2Affine::identity() -> Self
+pub fn G2Affine::is_in_subgroup(Self) -> Bool
+pub fn G2Affine::is_infinity(Self) -> Bool
+pub fn G2Affine::is_on_curve(Self) -> Bool
+pub fn G2Affine::neg(Self) -> Self
+pub fn G2Affine::scalar_mul(Self, @field.U256) -> G2Jac
+pub fn G2Affine::scalar_mul_fn(Self, @field.Fn) -> G2Jac
+pub fn G2Affine::to_bytes_raw(Self) -> Bytes
+pub fn G2Affine::to_bytes_uncompressed(Self) -> Bytes
+pub fn G2Affine::to_jac(Self) -> G2Jac
+pub fn G2Affine::x(Self) -> @field.Fp2
+pub fn G2Affine::y(Self) -> @field.Fp2
+pub impl Eq for G2Affine
+
+#derive(@debug.Debug)
+pub struct G2Jac {
+  // private fields
+}
+pub fn G2Jac::add(Self, Self) -> Self
+pub fn G2Jac::add_mixed(Self, G2Affine) -> Self
+pub fn G2Jac::ct_eq(Self, Self) -> Bool
+pub fn G2Jac::ct_select(Self, Self, UInt64) -> Self
+pub fn G2Jac::double(Self) -> Self
+pub fn G2Jac::generator() -> Self
+pub fn G2Jac::identity() -> Self
+pub fn G2Jac::is_identity(Self) -> Bool
+pub fn G2Jac::neg(Self) -> Self
+pub fn G2Jac::scalar_mul(Self, @field.U256) -> Self
+pub fn G2Jac::scalar_mul_fn(Self, @field.Fn) -> Self
+pub fn G2Jac::sub(Self, Self) -> Self
+pub fn G2Jac::to_affine(Self) -> G2Affine
+pub fn G2Jac::x(Self) -> @field.Fp2
+pub fn G2Jac::y(Self) -> @field.Fp2
+pub fn G2Jac::z(Self) -> @field.Fp2
+pub impl Eq for G2Jac
+
+// Type aliases
+
+// Traits

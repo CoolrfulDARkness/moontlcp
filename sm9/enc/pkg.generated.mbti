@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/sm9/enc"
+
+import {
+  "CoolrfulDARkness/moontlcp/sm9/ec",
+  "CoolrfulDARkness/moontlcp/sm9/field",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const MAX_KDF_LEN : Int32 = 16_777_216
+
+pub const MIN_ENTROPY_LEN : Int32 = 32
+
+pub fn decrypt(BytesView, @ec.G2Affine, BytesView, mode? : EncMode) -> Result[Bytes, String]
+
+pub fn encrypt_deterministic(@ec.G1Affine, BytesView, BytesView, BytesView, mode? : EncMode, hid? : Byte) -> Result[Bytes, String]
+
+pub fn encrypt_with_r(@ec.G1Affine, BytesView, BytesView, @field.Fn, mode? : EncMode, hid? : Byte) -> Result[Bytes, String]
+
+pub fn kem_decapsulate(BytesView, @ec.G2Affine, @ec.G1Affine, Int32) -> Result[Bytes, String]
+
+pub fn kem_encapsulate_deterministic(@ec.G1Affine, BytesView, Int32, BytesView, hid? : Byte) -> Result[KemOutput, String]
+
+pub fn kem_encapsulate_with_r(@ec.G1Affine, BytesView, Int32, @field.Fn, hid? : Byte) -> Result[KemOutput, String]
+
+// Errors
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub(all) enum EncMode {
+  KdfXor
+  Sm4EcbPkcs7
+}
+
+#derive(Eq, @debug.Debug)
+pub struct KemOutput {
+  key : Bytes
+  c1 : @ec.G1Affine
+}
+pub fn KemOutput::c1(Self) -> @ec.G1Affine
+pub fn KemOutput::c1_bytes_raw(Self) -> Bytes
+pub fn KemOutput::c1_bytes_uncompressed(Self) -> Bytes
+pub fn KemOutput::key(Self) -> Bytes
+
+// Type aliases
+
+// Traits
