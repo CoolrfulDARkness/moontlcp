@@ -3,7 +3,13 @@
 **纯 MoonBit、零 C/FFI 依赖、类型安全的国密全栈安全基础设施：TLCP 1.1 双证书传输层协议（PKI） + SM9 BN256 标识密码全套算法（IBC），共享统一 SM3 / SM4 / CT 密码核心**
 
 > 遵循 **GM/T 0024-2014 / GB/T 38636-2020（TLCP 1.1）**、**GB/T 38635-2020 / GM/T 0044-2016（SM9 Part 1–5）**、**GM/T 0015-2023**、**GB/T 32905-2016（SM3）**、**GB/T 32907-2016（SM4）**、**GB/T 32918-2016（SM2）** 与 **RFC 8998（SM4-GCM）**。  
-> 一套零 FFI 纯 MoonBit 代码原生运行于 **WebAssembly (Wasm) / JavaScript (JS) / Native (MSVC/GCC)** 三端，**162 项全量测试零警告通过**，并通过 **OpenSSL 3.5.6 实时双向 8/8 跨语言字节级对拍**。
+> 一套零 FFI 纯 MoonBit 代码原生运行于 **WebAssembly (Wasm) / JavaScript (JS) / Native (MSVC/GCC)** 三端，**168 项全量测试零警告通过**，并通过 **OpenSSL 3.5.6 实时双向 8/8 跨语言字节级对拍** 与 **真实 OS TCP Socket 端到端闭环验证**。
+
+- **在线零安装交互实验室（GitHub Pages）**：<https://coolrfuldarkness.github.io/moontlcp/>（浏览器内实时运行纯 MoonBit 编译的 TLCP 1.1 双证书握手显微镜、红队篡改攻防、Session ID 带宽对比与 SM9 邮箱即公钥交互台）
+- **mooncakes.io 安装**：
+  ```bash
+  moon add CoolrfulDARkness/moontlcp
+  ```
 
 ---
 
@@ -21,16 +27,32 @@
   - `sm9/kgc`、`sm9/sign`、`sm9/keyex`、`sm9/enc`、`sm9` 门面：完整覆盖 KGC 签名/加密主密钥与用户私钥提取、**Part 2 数字签名**、**Part 3 密钥交换（含双向 S1/S2 确认）**、**Part 4 KEM 与 PKE（`KdfXor` 与直接调用共享 `crypto/sm4` 的 `Sm4EcbPkcs7`）**，通过全部国标附录 A 字节级测试向量及 IND-CCA2 / 畸形点对抗回归。
 - **严格 ASN.1 DER 与国密 X.509 v3 双证书校验（`x509/der`、`x509`）**：
   - Strict DER 拒绝不定长、非最短长度编码、非规范布尔/整数等 BER 歧义攻击。
-  - 支持国密 OID（`1.2.156.10197.1.301`、`1.2.156.10197.1.501`），强制校验 TLCP **签名证书 (`digitalSignature`) 与加密证书 (`keyEncipherment`/`keyAgreement`) 用途分离**，并内置标准 X.509 v3 国密证书签发器。
-- **防 Lucky13 记录层与 Sans-I/O TLCP 1.1 状态机（`record`、`handshake`、`state`）**：
+  - 支持国密 OID（`1.2.156.10197.1.301`、`1.2.156.10197.1.501`），强制校验 TLCP **签名证书 (`digitalSignature`) 与加密证书 (`keyEncipherment`/`keyAgreement`) 用途分离**、拒绝 CA 冒充叶子，并内置标准 X.509 v3 国密证书签发器。
+- **防 Lucky13 记录层与 Sans-I/O TLCP 1.1 状态机（`record`、`handshake`、`state`、`web_api`）**：
   - 支持全部 4 大国标套件：`0xE013` `ECC_SM4_CBC_SM3`、`0xE053` `ECC_SM4_GCM_SM3`、`0xE011` `ECDHE_SM4_CBC_SM3`（SM2-KE + mTLCP）、`0xE051` `ECDHE_SM4_GCM_SM3`（SM2-KE + mTLCP）。
   - 记录层 CBC 解密路径采用**恒定时间填充检查 + 固定窗口 MAC 提取 + SM3 压缩块差值对齐**抵御 Padding Oracle / Lucky13 攻击；支持单向认证、双向 mTLCP、**Session ID 简短握手复用（1183B → 263B，节省 77%）**、16KB 自动分片与全路径 **Fail-Closed** Fatal Alert 终止。
+  - 提供 `web_api/` 零依赖 JS ESM 导出包，同时驱动**浏览器零安装交互实验室**与 **Node.js 真实 OS TCP Socket 双向通信演示**。
 
 ---
 
 ## 快速体验（一键运行）
 
-### 1. 运行 6 阶段端到端 CLI 实景演示（TLCP 1.1 + SM9）
+### 1. 浏览器零安装交互实验室（在线或本地）
+- 直接访问在线部署：<https://coolrfuldarkness.github.io/moontlcp/>
+- 或本地编译 ESM 并在 Node 22 / 浏览器中运行：
+```bash
+moon build web_api --target js --release
+node examples/web-demo/smoke.mjs
+```
+
+### 2. 真实 OS TCP Socket 端到端 TLCP 1.1 通信演示（零 npm 依赖）
+```bash
+moon build web_api --target js --release
+node examples/tlcp-tcp-demo/tlcp_tcp_demo.mjs
+```
+使用 Node.js 内置 `node:net` 在 `127.0.0.1` 真实 OS TCP 回路上分别跑通 **`ECC_SM4_GCM_SM3`** 与 **`ECDHE_SM4_CBC_SM3`（mTLCP 双向认证）** 完整双证书握手与双向加密报文传输。
+
+### 3. 运行 6 阶段端到端 CLI 实景演示（TLCP 1.1 + SM9）
 ```bash
 moon run --target wasm cmd/main
 ```
@@ -42,14 +64,14 @@ moon run --target wasm cmd/main
 5. TLCP 实时安全对抗演练（GCM Tag 翻转 → `BadRecordMac` + Fatal Alert；TLS 1.2 `0x0303` 降级 → `ProtocolVersion` + Fatal Alert）；
 6. **GB/T 38635-2020 SM9 BN256 IBC 全流程实景演练**（基于共享 SM3/SM4/CT 核心：KGC 密钥派生 + 双线性对 + SM9 签验与篡改拦截 + KEM/PKE `KdfXor` & `Sm4EcbPkcs7` 加解密 + SM9 密钥交换双向确认）。
 
-### 2. 运行全量三端测试（162/162 通过，0 警告）
+### 4. 运行全量三端测试（168/168 通过，0 警告）
 ```bash
 moon test --target wasm -d
 moon test --target js -d
 moon test --target native -d   # Windows 下需先加载 VS MSVC vcvars64.bat
 ```
 
-### 3. 运行 OpenSSL 3.5.6 ⇄ MoonTLCP 实时双向跨语言对拍
+### 5. 运行 OpenSSL 3.5.6 ⇄ MoonTLCP 实时双向跨语言对拍
 ```bash
 python harness/interop_openssl.py
 ```
@@ -57,7 +79,7 @@ python harness/interop_openssl.py
 - **MoonTLCP → OpenSSL 3.5.6（6/6 PASS）**：SM3 哈希、SM4-CBC-PKCS7、SM4-CTR、SM2 DER 签名验签（`distid:1234567812345678`）、SM2 ASN.1 `SM2Cipher` 解密、以及 MoonTLCP 签发的 Root CA / 签名证书 / 加密证书三张 X.509 v3 DER 证书经 `openssl x509` 规范重编码逐字节一致且密码学验签通过。
 - **OpenSSL 3.5.6 → MoonTLCP（2/2 PASS）**：实时生成随机 SM3/SM4/SM2 向量与全新 OpenSSL SM2 双证书链，在 Wasm 与 JS 双端由 MoonTLCP 解析并验签 100% 通过。
 
-### 4. 代码调用示例
+### 6. 代码调用示例
 
 #### TLCP 1.1 Sans-I/O 内存通道握手
 ```moonbit nocheck
@@ -100,6 +122,16 @@ let pt = @sm9.decrypt(b"Bob", de_bob, ct, mode=@sm9_enc.EncMode::Sm4EcbPkcs7).un
 
 ---
 
+## 威胁模型与明确非目标（Threat Model & Non-Goals）
+
+- **本库防御范围（In-Scope）**：主动网络攻击者（篡改、重放、乱序、TLS 1.2/TLCP 1.0 版本降级、双证书互换、CA 冒充叶子、64KiB/18KiB 帧 DoS、mTLCP 会话复用绕过）、远程时序/预言机攻击（CBC Lucky13 / Padding Oracle、SM9 IND-CCA2 密文探针、G2 wrong-twist/cofactor 攻击）与内存越界类漏洞。详见 [`docs/SECURITY_AUDIT.md`](docs/SECURITY_AUDIT.md)。
+- **诚实边界与非目标（Non-Goals & Limitations）**：
+  1. **JIT / Wasm / JS 恒定时间边界**：本库在源码与算法层通过 `crypto/ct` 无分支操作、固定窗口标量乘和 SM3 压缩块对齐消除逻辑侧信道，但 Wasm/JS JIT 编译器重排与底层 CPU 微架构侧信道（如 Flush+Reload / Spectre）无法由高级语言源码绝对免疫；对抗本地共置微架构攻击的高敏场景建议使用 Native 目标并在隔离安全域或 HSM/SDF 内运行。
+  2. **调用方注入 CSPRNG 熵源**：核心库保持零 FFI 与确定性可测性，生产部署**必须**由宿主注入操作系统 CSPRNG 高熵 `seed` / `entropy`（SM9 强制 ≥32B）。
+  3. **明确不包含**：DTLCP（UDP）、异步 Socket 运行时绑定（由宿主接入，参见 `examples/tlcp-tcp-demo/`）、PKCS#11/SKF/SDF 硬件驱动、在线 CRL/OCSP 与 OS 时钟读取、会话重协商及 ZUC 套件。
+
+---
+
 ## 跨后端实测性能基准（`moon bench`）
 
 以下为本机（Windows AMD64，MoonBit `0.1.20261119`，MSVC Build Tools 2022）**23 项统一基准**（14 项 TLCP + 9 项 SM9 BN256）实测结果（可通过 `moon bench --target wasm bench` / `moon bench --target native bench` 复现）：
@@ -136,37 +168,42 @@ let pt = @sm9.decrypt(b"Bob", de_bob, ct, mode=@sm9_enc.EncMode::Sm4EcbPkcs7).un
 
 ```text
 moontlcp/
-├── crypto/                 # 统一共享国密密码核心（Zero-FFI，零重复实现）
-│   ├── ct/                 # 恒定时间防侧信道原语（TLCP + SM9 共用）
-│   ├── sm3/                # GB/T 32905 唯一 SM3 压缩内核 + HMAC-SM3 + TLCP-PRF + KDF
-│   ├── sm4/                # GB/T 32907 唯一 SM4 块核 + ECB-PKCS7 + CBC + CTR + RFC 8998 GCM
-│   └── sm2/                # GB/T 32918.2/3/4 SM2 曲线/签验/密钥交换/ASN.1 加解密
-├── sm9/                    # GB/T 38635-2020 SM9 BN256 标识密码完整套件（复用 crypto/*）
-│   ├── hash/               # 薄适配层：委托 crypto/sm3 & crypto/ct，实现 H1/H2/KDF/MAC
-│   ├── field/              # BN256 有限域塔：U256, Fp, Fn, Fp2, Fp6, Fp12
-│   ├── ec/                 # 恒定时间 G1/G2 群运算与 G2 素数阶子群校验
-│   ├── pairing/            # BN256 最优 R-ate 双线性对（含双配对乘积）
-│   ├── kgc/                # KGC 主密钥生成与用户签/加/协商私钥提取
-│   ├── sign/               # GB/T 38635.2 SM9 数字签名与验签
-│   ├── keyex/              # GB/T 38635.3 SM9 密钥交换与双向 S1/S2 确认
-│   ├── enc/                # GB/T 38635.4 SM9 KEM & PKE（直调共享 crypto/sm4）
-│   └── sm9.mbt             # SM9 高层统一门面
-├── x509/
-│   ├── der/                # 零依赖 Strict ASN.1 DER + PEM + 国密 OID
-│   └── ...                 # 国密 X.509 v3 证书解析、签发与 TLCP 双证书用途分离校验
-├── record/                 # GM/T 0024 记录层分片 + 防 Lucky13 CBC-SM3 + GCM AEAD
-├── handshake/              # GB/T 38636 全部 9 类握手消息编解码、Alert、Key Schedule、Transcript
-├── state/                  # Sans-I/O ClientConn / ServerConn 状态机 + 26+ 独立安全对抗测试
-├── cmd/main/               # 6 阶段一键可运行实景演示 CLI（TLCP 1.1 + SM9）
-├── bench/                  # 23 项跨后端统一性能基准套件 (moon bench)
-├── harness/                # OpenSSL 3.5.6 ⇄ MoonTLCP 实时双向跨语言对拍 Harness
+├── crypto/                     # 统一共享国密密码核心（Zero-FFI，零重复实现）
+│   ├── ct/                     # 恒定时间防侧信道原语（TLCP + SM9 共用）
+│   ├── sm3/                    # GB/T 32905 唯一 SM3 压缩内核 + HMAC-SM3 + TLCP-PRF + KDF
+│   ├── sm4/                    # GB/T 32907 唯一 SM4 块核 + ECB-PKCS7 + CBC + CTR + RFC 8998 GCM
+│   └── sm2/                    # GB/T 32918.2/3/4 SM2 曲线/签验/密钥交换/ASN.1 加解密
+├── sm9/                        # GB/T 38635-2020 SM9 BN256 标识密码完整套件（复用 crypto/*）
+│   ├── hash/                   # 薄适配层：委托 crypto/sm3 & crypto/ct，实现 H1/H2/KDF/MAC
+│   ├── field/                  # BN256 有限域塔：U256, Fp, Fn, Fp2, Fp6, Fp12
+│   ├── ec/                     # 恒定时间 G1/G2 群运算与 G2 素数阶子群校验
+│   ├── pairing/                # BN256 最优 R-ate 双线性对（含双配对乘积）
+│   ├── kgc/ · sign/ · keyex/ · enc/ · sm9.mbt
+├── x509/                       # Strict ASN.1 DER + 国密 X.509 v3 证书签发与双证书用途分离校验
+├── record/                     # GM/T 0024 记录层分片 + 防 Lucky13 CBC-SM3 + GCM AEAD
+├── handshake/                  # GB/T 38636 全部 9 类握手消息编解码、Alert、Key Schedule、Transcript
+├── state/                      # Sans-I/O ClientConn / ServerConn 状态机 + 26 项独立安全对抗测试
+├── web_api/                    # 零依赖 JS ESM / Wasm / Native 交互实验与 TCP 桥接导出包
+├── examples/
+│   ├── web-demo/               # 浏览器零安装交互实验室（index.html + Node smoke.mjs）
+│   └── tlcp-tcp-demo/          # 真实 OS TCP Socket 端到端 TLCP 1.1 通信演示（零 npm 依赖）
+├── cmd/main/                   # 6 阶段一键可运行实景演示 CLI（TLCP 1.1 + SM9）
+├── bench/                      # 23 项跨后端统一性能基准套件 (moon bench)
+├── harness/                    # OpenSSL 3.5.6 ⇄ MoonTLCP 实时双向跨语言对拍 Harness
+├── .github/workflows/          # 三端 CI（ci.yml）与 GitHub Pages 自动部署（pages.yml）
+├── THIRD_PARTY_NOTICES.md      # 国标/RFC 向量溯源与外部参考合规声明
 └── docs/
-    ├── ARCHITECTURE.md      # 统一分层架构、TLCP + SM9 标准覆盖矩阵与共享原语去重说明
-    └── VERIFICATION_LOG.md  # 五层验证闭环、162 项三端回归实测与研发抓虫实录
+    ├── ARCHITECTURE.md         # 统一分层架构、TLCP + SM9 标准覆盖矩阵与共享原语去重说明
+    ├── VERIFICATION_LOG.md     # 五层验证闭环、三端回归实测与研发抓虫实录
+    ├── SECURITY_AUDIT.md       # P0/P1 安全审计缺陷修复清单与威胁模型
+    └── DEFENSE_QA.md           # 决赛评委白板硬核问答速查表
 ```
 
-- 详细架构设计、TLCP 1.1 + SM9 逐条款覆盖矩阵与共享原语去重设计：见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
-- 完整五层验证闭环、OpenSSL 3.5.6 兼容性发现与研发抓虫实录：见 [`docs/VERIFICATION_LOG.md`](docs/VERIFICATION_LOG.md)。
+- 统一分层架构与国标条款覆盖矩阵：[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- 五层验证闭环与研发抓虫实录：[`docs/VERIFICATION_LOG.md`](docs/VERIFICATION_LOG.md)
+- 安全审计与对抗加固报告：[`docs/SECURITY_AUDIT.md`](docs/SECURITY_AUDIT.md)
+- 决赛评委白板问答速查表：[`docs/DEFENSE_QA.md`](docs/DEFENSE_QA.md)
+- 第三方合规与标准向量声明：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
 
 ---
 

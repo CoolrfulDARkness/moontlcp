@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MoonTLCP — 纯 MoonBit 国密全栈（TLCP 1.1 + SM9）零安装交互实验室</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-card: #121a2f;
+      --bg-elev: #18233f;
+      --border: #263558;
+      --text: #e6edf7;
+      --muted: #93a4c4;
+      --accent: #38bdf8;
+      --accent-2: #818cf8;
+      --green: #22c55e;
+      --green-bg: rgba(34, 197, 94, 0.12);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.14);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.14);
+      --mono: "JetBrains Mono", "Fira Code", Consolas, "Courier New", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: radial-gradient(circle at top right, #172447 0%, var(--bg) 52%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.55;
+    }
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px 18px 56px;
+    }
+    header {
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(24, 35, 63, 0.92), rgba(18, 26, 47, 0.96));
+      border-radius: 16px;
+      padding: 22px 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+    .title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--bg-elev);
+      color: var(--text);
+    }
+    .badge.ok { border-color: rgba(34,197,94,0.45); background: var(--green-bg); color: #86efac; }
+    .badge.err { border-color: rgba(239,68,68,0.45); background: var(--red-bg); color: #fca5a5; }
+    .badge.warn { border-color: rgba(245,158,11,0.45); background: var(--amber-bg); color: #fcd34d; }
+    .kpi-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--muted);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover { color: var(--text); border-color: var(--accent); }
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(129, 140, 248, 0.18));
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+    .panel {
+      display: none;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+    .panel.active { display: block; }
+    .panel-desc {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    select, input[type="text"] {
+      width: 100%;
+      padding: 9px 11px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+    select:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 24px;
+      font-size: 0.88rem;
+    }
+    .check-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+    button.action {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 9px 14px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #fff;
+      background: var(--bg-elev);
+      transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    button.action:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+    }
+    button.action:disabled { opacity: 0.55; cursor: not-allowed; }
+    button.action.primary {
+      background: linear-gradient(135deg, #0284c7, #4f46e5);
+      border-color: #38bdf8;
+    }
+    button.action.danger {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.55);
+      color: #fecaca;
+    }
+    button.action.danger:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: var(--red);
+    }
+    .banner {
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 0.92rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .banner.pass {
+      background: var(--green-bg);
+      border-color: rgba(34, 197, 94, 0.5);
+      color: #bbf7d0;
+    }
+    .banner.blocked {
+      background: var(--red-bg);
+      border-color: rgba(239, 68, 68, 0.55);
+      color: #fecaca;
+    }
+    .banner.info {
+      background: rgba(56, 189, 248, 0.1);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #bae6fd;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      background: rgba(11, 16, 32, 0.72);
+      border-radius: 10px;
+      padding: 13px 15px;
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 0.86rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .metric {
+      font-size: 1.55rem;
+      font-weight: 700;
+      font-family: var(--mono);
+      margin: 4px 0;
+    }
+    .mono-box {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      background: #070b16;
+      border: 1px solid #1e2a47;
+      border-radius: 8px;
+      padding: 10px;
+      word-break: break-all;
+      color: #cbd5e1;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .flight-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .flight-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      background: rgba(11, 16, 32, 0.72);
+    }
+    .flight-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .dir-tag {
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .dir-cs { background: rgba(56, 189, 248, 0.18); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); }
+    .dir-sc { background: rgba(129, 140, 248, 0.2); color: #c7d2fe; border: 1px solid rgba(129, 140, 248, 0.4); }
+    .flight-label { font-weight: 600; font-size: 0.88rem; }
+    .flight-bytes { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+    .bar-wrap {
+      margin: 10px 0;
+    }
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.84rem;
+      margin-bottom: 4px;
+    }
+    .bar-track {
+      height: 22px;
+      border-radius: 8px;
+      background: #070b16;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 7px;
+      transition: width 0.35s ease;
+    }
+    .bar-full { background: linear-gradient(90deg, #6366f1, #38bdf8); }
+    .bar-resumed { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    footer {
+      margin-top: 22px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title-row">
+        <div>
+          <h1>MoonTLCP — 纯 MoonBit 国密全栈（TLCP 1.1 + SM9）零安装交互实验室</h1>
+          <p class="subtitle">
+            Zero-FFI Pure MoonBit Compiled to Browser ESM · GM/T 0024-2023 (TLCP 1.1) + GB/T 38635-2020 (SM9 BN256 IBC)
+          </p>
+        </div>
+        <span id="engine-status" class="badge warn">正在加载 MoonBit ESM 引擎...</span>
+      </div>
+      <div class="kpi-strip">
+        <span class="badge">Zero External Deps · 0 FFI</span>
+        <span class="badge">Shared SM3 / SM4 / CT Core</span>
+        <span class="badge">4 GM/T 0024 Cipher Suites + mTLCP</span>
+        <span class="badge">SM9 BN256 Sign / PKE / KeyEx</span>
+        <span class="badge">OpenSSL 3.5.6 8/8 Interop</span>
+      </div>
+    </header>
+
+    <div id="load-error" class="banner blocked hidden"></div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="tab-tlcp">
+        1. TLCP 1.1 双证书握手显微镜 &amp; 红队攻防
+      </button>
+      <button class="tab-btn" data-tab="tab-resume">
+        2. Session ID 简短握手带宽对比
+      </button>
+      <button class="tab-btn" data-tab="tab-sm9">
+        3. SM9 BN256 标识密码（邮箱即公钥）交互台
+      </button>
+    </div>
+
+    <!-- TAB 1: TLCP Handshake Microscope & Red-Team Lab -->
+    <section id="tab-tlcp" class="panel active">
+      <p class="panel-desc">
+        在浏览器内实时运行完整纯 MoonBit GM/T 0024 双证书握手（实时签发 SM2 Root CA + 签名/加密双证，驱动 Sans-I/O Client/Server 状态机），并可一键发起 3 类真实红队攻击验证 Fail-Closed 拦截与 Fatal Alert。
+      </p>
+      <div class="controls">
+        <div class="field">
+          <label for="tlcp-suite">密码套件 (GM/T 0024 Cipher Suite)</label>
+          <select id="tlcp-suite">
+            <option value="ECC_SM4_GCM_SM3">0xE053 · ECC_SM4_GCM_SM3 (SM4-GCM AEAD)</option>
+            <option value="ECC_SM4_CBC_SM3">0xE013 · ECC_SM4_CBC_SM3 (防 Lucky13 CBC-SM3)</option>
+            <option value="ECDHE_SM4_GCM_SM3">0xE051 · ECDHE_SM4_GCM_SM3 (SM2-KE + mTLCP)</option>
+            <option value="ECDHE_SM4_CBC_SM3">0xE011 · ECDHE_SM4_CBC_SM3 (SM2-KE + mTLCP)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="tlcp-msg">应用层明文报文 (Application Payload)</label>
+          <input id="tlcp-msg" type="text" value="POST /api/gm/transfer — 国密 TLCP 1.1 双证书加密报文" />
+        </div>
+        <div class="field">
+          <div class="check-row">
+            <input id="tlcp-mutual" type="checkbox" />
+            <label for="tlcp-mutual" style="margin:0;color:var(--text);">双向认证 mTLCP（ECDHE 套件按国标自动开启）</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="action primary" id="btn-tlcp-normal" data-tamper="none">正常握手 (Normal Handshake)</button>
+        <button class="action danger" id="btn-tlcp-ct" data-tamper="tamper_ciphertext">篡改应用密文 1 bit (Tamper Ciphertext)</button>
+        <button class="action danger" id="btn-tlcp-swap" data-tamper="swap_dual_certs">双证书互换冒充 (Swap Dual Certs)</button>
+        <button class="action danger" id="btn-tlcp-fin" data-tamper="tamper_finished">篡改 Finished (Tamper Finished)</button>
+      </div>
+
+      <div id="tlcp-output" class="hidden">
+        <div id="tlcp-banner" class="banner"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Slot 0 · 签名证书 (Signing Certificate)</h3>
+            <div id="tlcp-sign-cert" class="mono-box"></div>
+          </div>
+          <div class="card">
+            <h3>Slot 1 · 加密证书 (Encryption Certificate)</h3>
+            <div id="tlcp-enc-cert" class="mono-box"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <h3>握手报文显微镜 (Wire Flight Timeline)</h3>
+          <div id="tlcp-flights" class="flight-list"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>线缆密文记录 (Application Record Hex)</h3>
+            <div id="tlcp-ct-hex" class="mono-box"></div>
+          </div>
+          <div class="card">
+            <h3>服务端还原明文 (Recovered Plaintext)</h3>
+            <div id="tlcp-pt-out" class="mono-box"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Session ID Resumption Benchmark -->
+    <section id="tab-resume" class="panel">
+      <p class="panel-desc">
+        在同一服务端 <code>SessionStore</code> 上实测完整双证书握手与 Session ID 简短握手复用（跳过证书链传输与非对称密钥交换），对比真实线缆字节数与带宽节省比例。
+      </p>
+      <div class="controls">
+        <div class="field">
+          <label for="resume-suite">密码套件 (Cipher Suite)</label>
+          <select id="resume-suite">
+            <option value="ECC_SM4_GCM_SM3">0xE053 · ECC_SM4_GCM_SM3</option>
+            <option value="ECC_SM4_CBC_SM3">0xE013 · ECC_SM4_CBC_SM3</option>
+            <option value="ECDHE_SM4_GCM_SM3">0xE051 · ECDHE_SM4_GCM_SM3 (mTLCP)</option>
+            <option value="ECDHE_SM4_CBC_SM3">0xE011 · ECDHE_SM4_CBC_SM3 (mTLCP)</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="action primary" id="btn-resume-run">运行完整握手 vs Session ID 简短复用对比</button>
+      </div>
+      <div id="resume-output" class="hidden">
+        <div id="resume-banner" class="banner"></div>
+        <div class="grid-3">
+          <div class="card">
+            <h3>完整握手 (Full Handshake)</h3>
+            <div id="res-full-bytes" class="metric">—</div>
+            <div id="res-full-split" style="font-size:0.8rem;color:var(--muted);"></div>
+          </div>
+          <div class="card">
+            <h3>简短复用 (Resumed Handshake)</h3>
+            <div id="res-short-bytes" class="metric">—</div>
+            <div id="res-short-split" style="font-size:0.8rem;color:var(--muted);"></div>
+          </div>
+          <div class="card">
+            <h3>握手带宽节省 (Wire Savings)</h3>
+            <div id="res-savings" class="metric" style="color:var(--green);">—</div>
+            <div style="font-size:0.8rem;color:var(--muted);">跳过双证书链与 SM2 公钥运算</div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3>带宽对比条 (Wire Byte Comparison)</h3>
+          <div class="bar-wrap">
+            <div class="bar-label"><span>完整握手 (Full)</span><span id="bar-full-label"></span></div>
+            <div class="bar-track"><div id="bar-full" class="bar-fill bar-full" style="width:100%"></div></div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-label"><span>简短复用 (Resumed)</span><span id="bar-res-label"></span></div>
+            <div class="bar-track"><div id="bar-res" class="bar-fill bar-resumed" style="width:22%"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>协商 Session ID (32 Bytes Hex)</h3>
+          <div id="res-sid-hex" class="mono-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: SM9 BN256 IBC Interactive Lab -->
+    <section id="tab-sm9" class="panel">
+      <p class="panel-desc">
+        实时运行 <strong>GB/T 38635-2020 SM9 BN256 标识密码全流程</strong>（直接复用 <code>crypto/sm3</code>、<code>crypto/sm4</code>、<code>crypto/ct</code> 唯一核心）：无需 X.509 证书，以任意邮箱/身份字符串作为公钥，完成 KGC 私钥提取、数字签验、公钥加解密（KDF-XOR / SM4-ECB-PKCS#7）与密钥交换双向确认（<code>S_B==S_1</code>, <code>S_A==S_2</code>）。
+      </p>
+      <div class="controls">
+        <div class="field">
+          <label for="sm9-signer">签名者 / 发起方身份 (Signer ID)</label>
+          <input id="sm9-signer" type="text" value="alice@gm-bank.cn" />
+        </div>
+        <div class="field">
+          <label for="sm9-recipient">接收者 / 响应方身份 (Recipient ID)</label>
+          <input id="sm9-recipient" type="text" value="bob@gm-bank.cn" />
+        </div>
+        <div class="field">
+          <label for="sm9-mode">PKE 加密模式 (GB/T 38635.4)</label>
+          <select id="sm9-mode">
+            <option value="sm4_ecb">SM4-ECB-PKCS#7（直调共享 crypto/sm4）</option>
+            <option value="kdf_xor">KDF-XOR 流加密（直调共享 crypto/sm3）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="sm9-msg">明文消息 (Message)</label>
+          <input id="sm9-msg" type="text" value="SM9 邮箱即公钥：纯 MoonBit BN256 最优 R-ate 双线性对实测！" />
+        </div>
+      </div>
+      <div class="check-row" style="padding-top:0;margin-bottom:10px;">
+        <input id="sm9-tamper" type="checkbox" />
+        <label for="sm9-tamper" style="margin:0;color:#fca5a5;">
+          红队开关：篡改 SM9 签名 <code>h</code> 分量 1 bit（验证验签拦截）
+        </label>
+      </div>
+      <div class="btn-row">
+        <button class="action primary" id="btn-sm9-run">执行 SM9 KGC + 签验 + PKE + KeyEx 全流程</button>
+      </div>
+
+      <div id="sm9-output" class="hidden">
+        <div id="sm9-banner" class="banner"></div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Part 2 · SM9 数字签名与验签 (GB/T 38635.2)</h3>
+            <div id="sm9-sig-badges" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-bottom:4px;">签名标量 h (32B Hex):</div>
+            <div id="sm9-sig-h" class="mono-box"></div>
+          </div>
+          <div class="card">
+            <h3>Part 3 · SM9 密钥交换双向确认 (GB/T 38635.3)</h3>
+            <div id="sm9-kx-badges" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-bottom:4px;">协商共享密钥 SK (32B Hex):</div>
+            <div id="sm9-sk-hex" class="mono-box"></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Part 4 · SM9 PKE 密文 (C1 || C3 || C2 Hex)</h3>
+            <div id="sm9-ct-hex" class="mono-box"></div>
+          </div>
+          <div class="card">
+            <h3>Part 4 · 解密还原明文 (Recovered Message)</h3>
+            <div id="sm9-pt-out" class="mono-box"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Powered by <a href="https://github.com/CoolrfulDARkness/moontlcp" target="_blank" rel="noopener">CoolrfulDARkness/moontlcp</a> · 100% Pure MoonBit · Apache-2.0 License
+    </footer>
+  </div>
+
+  <script type="module">
+    const statusEl = document.getElementById("engine-status");
+    const loadErrEl = document.getElementById("load-error");
+    let api = null;
+
+    async function loadEngine() {
+      const candidates = [
+        "./web_api.js",
+        "../../_build/js/release/build/web_api/web_api.js",
+      ];
+      let lastErr = null;
+      for (const path of candidates) {
+        try {
+          const mod = await import(path);
+          if (typeof mod.run_tlcp_handshake === "function") {
+            api = mod;
+            statusEl.textContent = "MoonBit ESM 引擎已就绪 (" + path + ")";
+            statusEl.className = "badge ok";
+            return true;
+          }
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      statusEl.textContent = "ESM 引擎加载失败";
+      statusEl.className = "badge err";
+      loadErrEl.classList.remove("hidden");
+      loadErrEl.textContent =
+        "无法加载 web_api.js（若本地预览，请先运行 `moon build web_api --target js --release` 并通过本地 HTTP 服务打开本页，例如 `python -m http.server 8080`）。详情: " +
+        String(lastErr);
+      return false;
+    }
+
+    // Tab switching
+    for (const btn of document.querySelectorAll(".tab-btn")) {
+      btn.addEventListener("click", () => {
+        for (const b of document.querySelectorAll(".tab-btn")) b.classList.remove("active");
+        for (const p of document.querySelectorAll(".panel")) p.classList.remove("active");
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    }
+
+    function runTlcp(tamperMode) {
+      if (!api) return;
+      const suite = document.getElementById("tlcp-suite").value;
+      const mutual = document.getElementById("tlcp-mutual").checked;
+      const msg = document.getElementById("tlcp-msg").value;
+
+      const t0 = performance.now();
+      const res = JSON.parse(api.run_tlcp_handshake(suite, mutual, tamperMode, msg));
+      const dt = (performance.now() - t0).toFixed(1);
+
+      const out = document.getElementById("tlcp-output");
+      out.classList.remove("hidden");
+
+      const banner = document.getElementById("tlcp-banner");
+      if (res.ok) {
+        banner.className = "banner pass";
+        banner.textContent =
+          "PASS · TLCP 1.1 握手建立 & 密文解密验真成功 | 套件: " +
+          res.suite +
+          (res.mutual_auth ? " (mTLCP 双向)" : " (服务端认证)") +
+          " | 总流量: " +
+          res.total_wire_bytes +
+          " B | 耗时: " +
+          dt +
+          " ms";
+      } else {
+        banner.className = "banner blocked";
+        banner.textContent =
+          "BLOCKED · 安全防线已触发 Fail-Closed 拦截 | " +
+          res.alert_or_error +
+          " | 耗时: " +
+          dt +
+          " ms";
+      }
+
+      document.getElementById("tlcp-sign-cert").textContent =
+        res.sign_cert_subject || "(无)";
+      document.getElementById("tlcp-enc-cert").textContent =
+        res.enc_cert_subject || "(无)";
+
+      const flightsEl = document.getElementById("tlcp-flights");
+      flightsEl.textContent = "";
+      for (let i = 0; i < res.flights.length; i++) {
+        const f = res.flights[i];
+        const item = document.createElement("div");
+        item.className = "flight-item";
+
+        const head = document.createElement("div");
+        head.className = "flight-head";
+
+        const left = document.createElement("div");
+        left.style.display = "flex";
+        left.style.alignItems = "center";
+        left.style.gap = "8px";
+        left.style.flexWrap = "wrap";
+
+        const dirTag = document.createElement("span");
+        dirTag.className = "dir-tag " + (f.dir.startsWith("C") ? "dir-cs" : "dir-sc");
+        dirTag.textContent = "#" + (i + 1) + " " + f.dir;
+
+        const lbl = document.createElement("span");
+        lbl.className = "flight-label";
+        lbl.textContent = f.label;
+
+        left.appendChild(dirTag);
+        left.appendChild(lbl);
+
+        const bytesEl = document.createElement("span");
+        bytesEl.className = "flight-bytes";
+        bytesEl.textContent = f.bytes + " bytes";
+
+        head.appendChild(left);
+        head.appendChild(bytesEl);
+
+        const hex = document.createElement("div");
+        hex.className = "mono-box";
+        hex.textContent = f.hex_preview;
+
+        item.appendChild(head);
+        item.appendChild(hex);
+        flightsEl.appendChild(item);
+      }
+
+      document.getElementById("tlcp-ct-hex").textContent =
+        res.app_ciphertext_hex || "(握手阶段已拦截，未进入应用层加密)";
+      document.getElementById("tlcp-pt-out").textContent =
+        res.app_plaintext_recovered || "(已阻断：服务端拒绝输出任何未通过鉴权的明文)";
+    }
+
+    for (const id of ["btn-tlcp-normal", "btn-tlcp-ct", "btn-tlcp-swap", "btn-tlcp-fin"]) {
+      const btn = document.getElementById(id);
+      btn.addEventListener("click", () => runTlcp(btn.dataset.tamper));
+    }
+
+    document.getElementById("btn-resume-run").addEventListener("click", () => {
+      if (!api) return;
+      const suite = document.getElementById("resume-suite").value;
+      const t0 = performance.now();
+      const res = JSON.parse(api.run_tlcp_session_resume(suite));
+      const dt = (performance.now() - t0).toFixed(1);
+
+      document.getElementById("resume-output").classList.remove("hidden");
+      const banner = document.getElementById("resume-banner");
+      if (res.ok && res.resumed_ok) {
+        banner.className = "banner pass";
+        banner.textContent =
+          "PASS · Session ID 简短握手复用成功 | 套件: " +
+          res.suite +
+          " | 带宽直降 " +
+          res.savings_percent +
+          "% | 耗时: " +
+          dt +
+          " ms";
+      } else {
+        banner.className = "banner blocked";
+        banner.textContent = "FAIL · " + (res.alert_or_error || "复用失败");
+      }
+
+      document.getElementById("res-full-bytes").textContent = res.full_wire_bytes + " B";
+      document.getElementById("res-full-split").textContent =
+        "Client " + res.full_client_bytes + " B + Server " + res.full_server_bytes + " B";
+      document.getElementById("res-short-bytes").textContent = res.resumed_wire_bytes + " B";
+      document.getElementById("res-short-split").textContent =
+        "Client " + res.resumed_client_bytes + " B + Server " + res.resumed_server_bytes + " B";
+      document.getElementById("res-savings").textContent = "-" + res.savings_percent + "%";
+
+      const ratio = res.full_wire_bytes > 0
+        ? Math.max(4, Math.round((res.resumed_wire_bytes * 100) / res.full_wire_bytes))
+        : 0;
+      document.getElementById("bar-full").style.width = "100%";
+      document.getElementById("bar-res").style.width = ratio + "%";
+      document.getElementById("bar-full-label").textContent = res.full_wire_bytes + " B (100%)";
+      document.getElementById("bar-res-label").textContent =
+        res.resumed_wire_bytes + " B (" + ratio + "%)";
+      document.getElementById("res-sid-hex").textContent = res.session_id_hex;
+    });
+
+    document.getElementById("btn-sm9-run").addEventListener("click", () => {
+      if (!api) return;
+      const btn = document.getElementById("btn-sm9-run");
+      btn.disabled = true;
+      btn.textContent = "正在执行 BN256 最优 R-ate 双线性对运算...";
+      setTimeout(() => {
+        try {
+          const signer = document.getElementById("sm9-signer").value;
+          const recipient = document.getElementById("sm9-recipient").value;
+          const mode = document.getElementById("sm9-mode").value;
+          const msg = document.getElementById("sm9-msg").value;
+          const tamper = document.getElementById("sm9-tamper").checked;
+
+          const t0 = performance.now();
+          const res = JSON.parse(api.run_sm9_demo(signer, recipient, msg, mode, tamper));
+          const dt = (performance.now() - t0).toFixed(1);
+
+          document.getElementById("sm9-output").classList.remove("hidden");
+          const banner = document.getElementById("sm9-banner");
+          if (res.ok) {
+            banner.className = "banner pass";
+            banner.textContent =
+              "PASS · SM9 BN256 全套流程通过（KGC 提取 + 签验 + " +
+              res.enc_mode.toUpperCase() +
+              " PKE + KeyEx 双向确认）| 耗时: " +
+              dt +
+              " ms";
+          } else if (res.tamper_blocked) {
+            banner.className = "banner blocked";
+            banner.textContent =
+              "BLOCKED · 1-bit 伪造签名已被 SM9 双线性对验签拦截！(PKE & KeyEx 仍正常通过) | 耗时: " +
+              dt +
+              " ms";
+          } else {
+            banner.className = "banner blocked";
+            banner.textContent = "FAIL · " + (res.error || "执行失败");
+          }
+
+          const sigBadges = document.getElementById("sm9-sig-badges");
+          sigBadges.textContent = "";
+          const b1 = document.createElement("span");
+          b1.className = "badge " + (res.sig_valid ? "ok" : "err");
+          b1.textContent = res.sig_valid ? "sig_valid = true (验签通过)" : "sig_valid = false (验签拒绝)";
+          sigBadges.appendChild(b1);
+          if (res.tamper_blocked) {
+            const b2 = document.createElement("span");
+            b2.className = "badge warn";
+            b2.textContent = "tamper_blocked = true (篡改已拦截)";
+            sigBadges.appendChild(b2);
+          }
+
+          const kxBadges = document.getElementById("sm9-kx-badges");
+          kxBadges.textContent = "";
+          const kb = document.createElement("span");
+          kb.className = "badge " + (res.keyex_confirmed ? "ok" : "err");
+          kb.textContent = res.keyex_confirmed
+            ? "S_B == S_1 && S_A == S_2 (双向密钥确认通过)"
+            : "KeyEx Failed";
+          kxBadges.appendChild(kb);
+
+          document.getElementById("sm9-sig-h").textContent = res.sig_h_hex || "(无)";
+          document.getElementById("sm9-sk-hex").textContent = res.shared_key_hex || "(无)";
+          document.getElementById("sm9-ct-hex").textContent = res.ciphertext_hex || "(无)";
+          document.getElementById("sm9-pt-out").textContent = res.decrypted_message || "(无)";
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "执行 SM9 KGC + 签验 + PKE + KeyEx 全流程";
+        }
+      }, 20);
+    });
+
+    // Auto-load engine and run an initial normal TLCP handshake preview
+    const loaded = await loadEngine();
+    if (loaded) {
+      runTlcp("none");
+    }
+  </script>
+</body>
+</html>

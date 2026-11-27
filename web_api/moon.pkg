@@ -1,0 +1,29 @@
+import {
+  "CoolrfulDARkness/moontlcp" @lib,
+  "CoolrfulDARkness/moontlcp/handshake",
+  "CoolrfulDARkness/moontlcp/record",
+  "CoolrfulDARkness/moontlcp/state",
+  "CoolrfulDARkness/moontlcp/x509",
+  "CoolrfulDARkness/moontlcp/sm9",
+  "CoolrfulDARkness/moontlcp/sm9/enc" @sm9_enc,
+  "CoolrfulDARkness/moontlcp/sm9/field" @sm9_field,
+  "CoolrfulDARkness/moontlcp/sm9/sign" @sm9_sign,
+}
+
+options(
+  link: {
+    "js": {
+      "exports": [
+        "run_tlcp_handshake",
+        "run_tlcp_session_resume",
+        "run_sm9_demo",
+        "tlcp_tcp_init_pair",
+        "tlcp_tcp_poll_out",
+        "tlcp_tcp_feed_in",
+        "tlcp_tcp_send_app",
+        "tlcp_tcp_close",
+      ],
+      "format": "esm",
+    },
+  },
+)

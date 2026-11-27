@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/moontlcp/web_api"
+
+// Values
+pub fn run_sm9_demo(String, String, String, String, Bool) -> String
+
+pub fn run_tlcp_handshake(String, Bool, String, String) -> String
+
+pub fn run_tlcp_session_resume(String) -> String
+
+pub fn tlcp_tcp_close(Int32) -> String
+
+pub fn tlcp_tcp_feed_in(Int32, String) -> String
+
+pub fn tlcp_tcp_init_pair(String, Bool) -> String
+
+pub fn tlcp_tcp_poll_out(Int32) -> String
+
+pub fn tlcp_tcp_send_app(Int32, String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
