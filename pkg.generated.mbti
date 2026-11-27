@@ -5,6 +5,7 @@ import {
   "CoolrfulDARkness/moontlcp/crypto/sm2",
   "CoolrfulDARkness/moontlcp/crypto/sm4",
   "CoolrfulDARkness/moontlcp/handshake",
+  "CoolrfulDARkness/moontlcp/record",
   "CoolrfulDARkness/moontlcp/state",
   "CoolrfulDARkness/moontlcp/x509",
 }
@@ -15,6 +16,14 @@ pub fn default_cipher_suites() -> Array[@handshake.CipherSuite]
 pub fn generate_test_pki(Bytes) -> @x509.TestPki raise @x509.X509Error
 
 pub fn hmac_sm3(Bytes, Bytes) -> Bytes
+
+pub fn inspect_alert(BytesView) -> (Byte, Byte, String) raise @handshake.HandshakeError
+
+pub fn inspect_handshake(BytesView) -> @handshake.HandshakeSummary raise @handshake.HandshakeError
+
+pub fn inspect_record(BytesView) -> @record.RecordView raise @record.RecordError
+
+pub fn inspect_record_stream(BytesView) -> Array[@record.RecordView] raise @record.RecordError
 
 pub fn new_client(@state.ClientConfig) -> @state.ClientConn
 
@@ -51,5 +60,8 @@ pub fn verify_dual_certs(Array[Bytes], Array[@x509.Certificate]) -> @x509.DualCe
 // Types and methods
 
 // Type aliases
+pub using @handshake {type HandshakeSummary}
+
+pub using @record {type RecordView}
 
 // Traits

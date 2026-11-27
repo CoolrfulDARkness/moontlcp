@@ -9,6 +9,8 @@ import {
 // Values
 pub const MAX_CIPHERTEXT_LEN : Int32 = 18432
 
+pub const MAX_INSPECT_RECORDS : Int32 = 1024
+
 pub const MAX_PLAINTEXT_LEN : Int32 = 16384
 
 pub const RECORD_HEADER_LEN : Int32 = 5
@@ -24,6 +26,10 @@ pub fn decode_record(BytesView) -> (RawRecord, Int32) raise RecordError
 pub fn encode_record(RawRecord) -> Bytes raise RecordError
 
 pub fn fragment_plaintext(ContentType, Bytes) -> Array[RawRecord]
+
+pub fn inspect_record(BytesView) -> RecordView raise RecordError
+
+pub fn inspect_record_stream(BytesView) -> Array[RecordView] raise RecordError
 
 // Errors
 #derive(Eq, @debug.Debug)
@@ -55,6 +61,7 @@ pub(all) enum ContentType {
   ApplicationData
 }
 pub fn ContentType::from_byte(Byte) -> Self raise RecordError
+pub fn ContentType::name(Self) -> String
 pub fn ContentType::to_byte(Self) -> Byte
 
 #derive(Eq, @debug.Debug)
@@ -74,6 +81,18 @@ pub fn RecordLayer::open(Self, RawRecord) -> Bytes raise RecordError
 pub fn RecordLayer::seal(Self, ContentType, Bytes, Bytes) -> Bytes raise RecordError
 pub fn RecordLayer::seq_num(Self) -> UInt64
 pub fn RecordLayer::set_cipher(Self, CipherState) -> Unit
+
+#derive(Eq, @debug.Debug)
+pub(all) struct RecordView {
+  content_type : Byte
+  content_type_name : String
+  version_major : Byte
+  version_minor : Byte
+  is_tlcp_1_1 : Bool
+  payload_len : Int32
+  total_wire_len : Int32
+  payload_offset : Int32
+}
 
 // Type aliases
 

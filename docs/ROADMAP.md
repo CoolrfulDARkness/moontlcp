@@ -1,22 +1,18 @@
 # MoonTLCP 开发路线图（Roadmap）
 
-本路线图面向后续接续开发者与新 AI 工程会话，精准对齐 2026 MoonBit 黑客松四维评审准则与长期开源可持续维护目标。
-
-## 已完成基线：`v0.1.0`
-- 统一零重复国密核心：`crypto/ct`、`crypto/sm3`、`crypto/sm4`、`crypto/sm2`（同时驱动 PKI TLCP 1.1 与 IBC SM9，静态扫描零重复 SM3/SM4 实现）；
-- 完整 GM/T 0024-2014 / GB/T 38636-2020 TLCP 1.1 双证书协议栈 + GB/T 38635-2020 SM9 BN256 标识密码全栈；
-- 三端 168/168 `-d` 零警告回归测试、23 项性能基准、OpenSSL 3.5.6 8/8 双向互操作、真实 OS TCP 回路演示、GitHub Pages 零安装浏览器交互工作台与双平台 CI。
-
-## `v0.2.0`：外部消费端 CI 与下游只读解剖接口
-- [ ] 新增独立 `examples/consumer` 工作区，通过 `moon add CoolrfulDARkness/moontlcp` 验证已发布 `mooncakes.io` 包零报错运行，接入双周定时 CI；
-- [ ] 在 `record/` 与 `handshake/` 导出无状态只读解析 API（`inspect_record` / `inspect_handshake`），供下游抓包/解剖工具（如 `moonshark`）零耦合消费。
+本路线图仅规划面向未来的演进里程碑（`v0.3.0 → v1.0.0+`），所有已交付能力请参见 [`README.md`](../README.md) 与 [`docs/VERIFICATION_LOG.md`](VERIFICATION_LOG.md)。
 
 ## `v0.3.0`：原生并发异步国密代理生产化
-- [ ] 在独立 `examples/tlcp_async_proxy/` 中基于 `moonbitlang/async/socket` 交付多连接并发国密反向代理（支持 PEM 双证书链热加载与套件配置），实测与 Tongsuo / OpenSSL 长连接互操作；
-- [ ] 严格保持核心协议包零外部依赖、三端全兼容。
+- [ ] 在独立 `examples/tlcp_async_proxy/` 工作区中基于 `moonbitlang/async/socket` 交付多连接并发国密反向代理（支持 PEM 双证书链热加载、SNI/套件配置与优雅停机）；
+- [ ] 实测与 Tongsuo / OpenSSL 长连接高并发双向互操作与背压稳定性；
+- [ ] 严格保持核心协议包（`CoolrfulDARkness/moontlcp`）零外部依赖与 Wasm / JS / Native 三端全兼容。
 
-## `v0.4.0 → v1.0.0`：MoonBit 1.0 稳定版、热点加速与 ABI 冻结
-- [ ] 适配 MoonBit `1.0.0-rc1` / `1.0` 稳定版，三端 `-d` 零警告；
-- [ ] 热点剖析 `crypto/sm4` 与 `crypto/sm3`（评估 `v128` SIMD 加速且保留标量参考实现与位级一致测试），发布对标 OpenSSL/GmSSL 的吞吐与 `.wasm` KB 级体积报告；
-- [ ] 探索对 DER 长度解码与 Record 分片边界补充属性测试（PBT）及 `moon prove` 边界验证；
-- [ ] 冻结公开 `.mbti` ABI 并发布 `v1.0.0`。
+## `v0.4.0`：热点加速与形式化边界验证
+- [ ] 对 `crypto/sm4`、`crypto/sm3` 与 `sm9/pairing` 开展跨后端热点剖析，评估 Wasm `v128` SIMD / Native 向量化加速路径，并保留标量参考实现及逐位一致性回归测试；
+- [ ] 发布对标 OpenSSL / GmSSL 的吞吐与 `.wasm` KB 级产物尺寸对比报告；
+- [ ] 为 Strict ASN.1 DER 长度解码、Record 16KB 分片重组与无状态解剖边界补充属性测试（PBT）及 `moon prove` 边界验证。
+
+## `v0.5.0 → v1.0.0`：MoonBit 1.0 稳定版与公开 ABI 冻结
+- [ ] 完整适配 MoonBit `1.0.0-rc` / `1.0` 稳定版编译器，保持 Wasm / JS / Native 三端 `-d` 零警告；
+- [ ] 补齐独立安全审计复核与完整版本迁移指南（Migration Guide）；
+- [ ] 冻结公开 `.mbti` ABI 契约并正式发布 `v1.0.0`。

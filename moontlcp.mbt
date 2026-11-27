@@ -202,3 +202,46 @@ pub fn run_handshake_loop(
   }
   (client_sent, server_sent)
 }
+
+// ============================================================================
+// Stateless Wire Inspection / Packet Dissector Entry Points
+// ============================================================================
+
+///|
+/// Re-exported stateless TLCP/TLS wire record metadata view.
+pub type RecordView = @record.RecordView
+
+///|
+/// Re-exported stateless plaintext TLCP handshake message summary.
+pub type HandshakeSummary = @handshake.HandshakeSummary
+
+///|
+/// Statelessly inspects a single TLCP/TLS wire record at the start of `raw`.
+pub fn inspect_record(raw : BytesView) -> RecordView raise @record.RecordError {
+  @record.inspect_record(raw)
+}
+
+///|
+/// Statelessly walks concatenated TLCP/TLS wire records on a TCP stream slice.
+pub fn inspect_record_stream(
+  raw : BytesView,
+) -> Array[RecordView] raise @record.RecordError {
+  @record.inspect_record_stream(raw)
+}
+
+///|
+/// Statelessly inspects a single plaintext TLCP handshake message frame.
+pub fn inspect_handshake(
+  raw : BytesView,
+) -> HandshakeSummary raise @handshake.HandshakeError {
+  @handshake.inspect_handshake(raw)
+}
+
+///|
+/// Statelessly inspects a 2-byte plaintext TLCP Alert payload into
+/// `(level_byte, description_byte, alert_name)`.
+pub fn inspect_alert(
+  payload : BytesView,
+) -> (Byte, Byte, String) raise @handshake.HandshakeError {
+  @handshake.inspect_alert(payload)
+}

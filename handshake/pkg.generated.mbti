@@ -53,6 +53,10 @@ pub fn encode_alert(Alert) -> Bytes
 
 pub fn encode_handshake_msg(HandshakeMsg) -> Bytes
 
+pub fn inspect_alert(BytesView) -> (Byte, Byte, String) raise HandshakeError
+
+pub fn inspect_handshake(BytesView) -> HandshakeSummary raise HandshakeError
+
 pub fn parse_ecdhe_params(BytesView) -> (UInt32, Bytes) raise HandshakeError
 
 // Errors
@@ -95,6 +99,7 @@ pub(all) enum AlertDescription {
   UnsupportedSite2Site
 }
 pub fn AlertDescription::from_byte(Byte) -> Self raise HandshakeError
+pub fn AlertDescription::name(Self) -> String
 pub fn AlertDescription::to_byte(Self) -> Byte
 
 #derive(Eq, @debug.Debug)
@@ -166,6 +171,19 @@ pub(all) enum HandshakeMsg {
   CertificateVerify(CertificateVerify)
   ClientKeyExchange(ClientKeyExchange)
   Finished(Finished)
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) struct HandshakeSummary {
+  msg_type : Byte
+  msg_type_name : String
+  body_len : Int32
+  total_wire_len : Int32
+  protocol_version : UInt32
+  cipher_suites : Array[UInt32]
+  selected_suite : UInt32?
+  cert_count : Int32
+  session_id_len : Int32
 }
 
 #derive(Eq, @debug.Debug)

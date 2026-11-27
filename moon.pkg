@@ -3,6 +3,7 @@ import {
   "CoolrfulDARkness/moontlcp/crypto/sm3",
   "CoolrfulDARkness/moontlcp/crypto/sm4",
   "CoolrfulDARkness/moontlcp/handshake",
+  "CoolrfulDARkness/moontlcp/record",
   "CoolrfulDARkness/moontlcp/x509",
   "CoolrfulDARkness/moontlcp/state",
 }

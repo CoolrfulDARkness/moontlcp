@@ -3,7 +3,7 @@
 **纯 MoonBit、零 C/FFI 依赖、类型安全的国密全栈安全基础设施：TLCP 1.1 双证书传输层协议（PKI） + SM9 BN256 标识密码全套算法（IBC），共享统一 SM3 / SM4 / CT 密码核心**
 
 > 遵循 **GM/T 0024-2014 / GB/T 38636-2020（TLCP 1.1）**、**GB/T 38635-2020 / GM/T 0044-2016（SM9 Part 1–5）**、**GM/T 0015-2023**、**GB/T 32905-2016（SM3）**、**GB/T 32907-2016（SM4）**、**GB/T 32918-2016（SM2）** 与 **RFC 8998（SM4-GCM）**。  
-> 一套零 FFI 纯 MoonBit 代码原生运行于 **WebAssembly (Wasm) / JavaScript (JS) / Native (MSVC/GCC)** 三端，**168 项全量测试零警告通过**，并通过 **OpenSSL 3.5.6 实时双向 8/8 跨语言字节级对拍** 与 **真实 OS TCP Socket 端到端闭环验证**。
+> 一套零 FFI 纯 MoonBit 代码原生运行于 **WebAssembly (Wasm) / JavaScript (JS) / Native (MSVC/GCC)** 三端，**175 项全量测试零警告通过**，并通过 **OpenSSL 3.5.6 实时双向 8/8 跨语言字节级对拍**、**真实 OS TCP Socket 端到端闭环** 与 **`examples/consumer` 已发布包外部消费验证**。
 
 - **在线零安装交互实验室（GitHub Pages）**：<https://coolrfuldarkness.github.io/moontlcp/>（浏览器内实时运行纯 MoonBit 编译的 TLCP 1.1 双证书握手显微镜、红队篡改攻防、Session ID 带宽对比与 SM9 邮箱即公钥交互台）
 - **mooncakes.io 安装**：
@@ -31,7 +31,7 @@
 - **防 Lucky13 记录层与 Sans-I/O TLCP 1.1 状态机（`record`、`handshake`、`state`、`web_api`）**：
   - 支持全部 4 大国标套件：`0xE013` `ECC_SM4_CBC_SM3`、`0xE053` `ECC_SM4_GCM_SM3`、`0xE011` `ECDHE_SM4_CBC_SM3`（SM2-KE + mTLCP）、`0xE051` `ECDHE_SM4_GCM_SM3`（SM2-KE + mTLCP）。
   - 记录层 CBC 解密路径采用**恒定时间填充检查 + 固定窗口 MAC 提取 + SM3 压缩块差值对齐**抵御 Padding Oracle / Lucky13 攻击；支持单向认证、双向 mTLCP、**Session ID 简短握手复用（1183B → 263B，节省 77%）**、16KB 自动分片与全路径 **Fail-Closed** Fatal Alert 终止。
-  - 提供 `web_api/` 零依赖 JS ESM 导出包，同时驱动**浏览器零安装交互实验室**与 **Node.js 真实 OS TCP Socket 双向通信演示**。
+  - 提供 `web_api/` 零依赖 JS ESM 导出包，同时驱动**浏览器零安装交互实验室**与 **Node.js 真实 OS TCP Socket 双向通信演示**；并在 `record/`、`handshake/` 及根门面导出无状态只读线格式解剖 API（`inspect_record` / `inspect_record_stream` / `inspect_handshake` / `inspect_alert`），供下游抓包与协议分析工具零耦合消费。
 
 ---
 
@@ -64,11 +64,13 @@ moon run --target wasm cmd/main
 5. TLCP 实时安全对抗演练（GCM Tag 翻转 → `BadRecordMac` + Fatal Alert；TLS 1.2 `0x0303` 降级 → `ProtocolVersion` + Fatal Alert）；
 6. **GB/T 38635-2020 SM9 BN256 IBC 全流程实景演练**（基于共享 SM3/SM4/CT 核心：KGC 密钥派生 + 双线性对 + SM9 签验与篡改拦截 + KEM/PKE `KdfXor` & `Sm4EcbPkcs7` 加解密 + SM9 密钥交换双向确认）。
 
-### 4. 运行全量三端测试（168/168 通过，0 警告）
+### 4. 运行全量三端测试（175/175 通过，0 警告）与外部消费端验证
 ```bash
 moon test --target wasm -d
 moon test --target js -d
 moon test --target native -d   # Windows 下需先加载 VS MSVC vcvars64.bat
+# 独立验证 mooncakes.io 已发布包消费：
+cd examples/consumer && moon update && moon test --target wasm -d && moon test --target js -d
 ```
 
 ### 5. 运行 OpenSSL 3.5.6 ⇄ MoonTLCP 实时双向跨语言对拍

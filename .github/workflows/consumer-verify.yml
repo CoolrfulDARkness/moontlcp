@@ -1,0 +1,46 @@
+name: Published Consumer Verify
+
+on:
+  release:
+    types: [published]
+  schedule:
+    - cron: '0 2 1,15 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  consumer-verify:
+    name: Verify published mooncakes.io package (Wasm / JS)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/consumer
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install MoonBit toolchain
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Print MoonBit toolchain version
+        run: moon version --all
+
+      - name: Refresh mooncakes.io registry index
+        run: moon update
+
+      - name: Type-check consumer workspace with warnings denied
+        run: moon check -d
+
+      - name: Run consumer smoke tests (Wasm)
+        run: moon test --target wasm -d
+
+      - name: Run consumer smoke tests (JS)
+        run: moon test --target js -d
