@@ -1,0 +1,134 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "CoolrfulDARkness/tlcp_async_proxy"
+
+import {
+  "CoolrfulDARkness/moontlcp/crypto/sm2",
+  "CoolrfulDARkness/moontlcp/handshake",
+  "CoolrfulDARkness/moontlcp/state",
+  "CoolrfulDARkness/moontlcp/x509",
+  "moonbitlang/async/socket",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn build_http_request(String, String, String) -> Bytes
+
+pub fn export_test_pki_pem(Bytes) -> PemPkiBundle raise ProxyError
+
+pub fn load_dual_certs_from_pem(String, String) -> VerifiedDualCerts raise ProxyError
+
+pub async fn send_tlcp_http_request(@socket.Addr, @state.ClientConfig, Bytes) -> TlcpHttpResult
+
+pub async fn serve_plaintext_http_backend(@socket.TcpServer, BackendStats) -> Unit
+
+pub async fn serve_tlcp_reverse_proxy(@socket.TcpServer, ProxyConfig, ProxyStats) -> Unit
+
+// Errors
+#derive(Eq, @debug.Debug)
+pub suberror ProxyError {
+  HandshakeFailed(String)
+  ProtocolRejected(String)
+  PeerClosedUnexpectedly
+  HttpParseError(String)
+  ConfigError(String)
+}
+
+// Types and methods
+pub struct AsyncTlcpClientStream {
+  sock : @socket.Tcp
+  conn : @state.ClientConn
+  app_buf : Array[Byte]
+  mut peer_closed : Bool
+  mut wire_bytes_in : Int32
+  mut wire_bytes_out : Int32
+}
+pub async fn AsyncTlcpClientStream::close(Self) -> Unit
+pub fn AsyncTlcpClientStream::close_socket_now(Self) -> Unit
+pub async fn AsyncTlcpClientStream::connect(@socket.Addr, @state.ClientConfig) -> Self
+pub fn AsyncTlcpClientStream::export_session(Self) -> @state.ResumedSession?
+pub fn AsyncTlcpClientStream::is_resumed(Self) -> Bool
+pub fn AsyncTlcpClientStream::negotiated_suite(Self) -> @handshake.CipherSuite?
+pub fn AsyncTlcpClientStream::raw_socket(Self) -> @socket.Tcp
+pub async fn AsyncTlcpClientStream::read_app_data(Self) -> Bytes?
+pub fn AsyncTlcpClientStream::seal_record_bytes(Self, Bytes) -> Bytes raise ProxyError
+pub fn AsyncTlcpClientStream::wire_in(Self) -> Int32
+pub fn AsyncTlcpClientStream::wire_out(Self) -> Int32
+pub async fn AsyncTlcpClientStream::write_app_data(Self, Bytes) -> Unit
+
+pub struct AsyncTlcpServerStream {
+  sock : @socket.Tcp
+  conn : @state.ServerConn
+  app_buf : Array[Byte]
+  mut peer_closed : Bool
+  mut wire_bytes_in : Int32
+  mut wire_bytes_out : Int32
+}
+pub async fn AsyncTlcpServerStream::accept(@socket.Tcp, @state.ServerConfig) -> Self
+pub async fn AsyncTlcpServerStream::close_notify(Self) -> Unit
+pub fn AsyncTlcpServerStream::is_resumed(Self) -> Bool
+pub fn AsyncTlcpServerStream::negotiated_suite(Self) -> @handshake.CipherSuite?
+pub fn AsyncTlcpServerStream::peer_certs(Self) -> @x509.DualCertBundle?
+pub async fn AsyncTlcpServerStream::read_app_data(Self) -> Bytes?
+pub fn AsyncTlcpServerStream::wire_in(Self) -> Int32
+pub fn AsyncTlcpServerStream::wire_out(Self) -> Int32
+pub async fn AsyncTlcpServerStream::write_app_data(Self, Bytes) -> Unit
+
+pub struct BackendStats {
+  mut requests_handled : Int32
+}
+pub fn BackendStats::new() -> Self
+
+pub(all) struct PemPkiBundle {
+  ca_pem : String
+  server_dual_pem : String
+  client_dual_pem : String
+  server_sign_priv : @sm2.PrivateKey
+  server_enc_priv : @sm2.PrivateKey
+  client_sign_priv : @sm2.PrivateKey
+  client_enc_priv : @sm2.PrivateKey
+}
+
+pub(all) struct ProxyConfig {
+  server_dual_pem : String
+  ca_pem : String
+  server_sign_priv : @sm2.PrivateKey
+  server_enc_priv : @sm2.PrivateKey
+  cipher_suites : Array[@handshake.CipherSuite]
+  require_client_cert : Bool
+  session_store : @state.SessionStore?
+  upstream_addr : @socket.Addr
+  base_seed : Bytes
+  max_connections : Int32
+}
+
+pub struct ProxyStats {
+  mut total_accepted : Int32
+  mut handshakes_ok : Int32
+  mut resumed_sessions : Int32
+  mut rejected_conns : Int32
+  mut forwarded_requests : Int32
+  mut total_upstream_bytes : Int32
+  mut total_downstream_bytes : Int32
+}
+pub fn ProxyStats::new() -> Self
+
+pub(all) struct TlcpHttpResult {
+  status_line : String
+  response_text : String
+  response_bytes : Bytes
+  negotiated_suite : @handshake.CipherSuite
+  resumed : Bool
+  handshake_wire_in : Int32
+  handshake_wire_out : Int32
+  exported_session : @state.ResumedSession?
+}
+
+pub(all) struct VerifiedDualCerts {
+  sign_cert : @x509.Certificate
+  enc_cert : @x509.Certificate
+  trust_anchors : Array[@x509.Certificate]
+}
+
+// Type aliases
+
+// Traits

@@ -3,7 +3,7 @@
 **纯 MoonBit、零 C/FFI 依赖、类型安全的国密全栈安全基础设施：TLCP 1.1 双证书传输层协议（PKI） + SM9 BN256 标识密码全套算法（IBC），共享统一 SM3 / SM4 / CT 密码核心**
 
 > 遵循 **GM/T 0024-2014 / GB/T 38636-2020（TLCP 1.1）**、**GB/T 38635-2020 / GM/T 0044-2016（SM9 Part 1–5）**、**GM/T 0015-2023**、**GB/T 32905-2016（SM3）**、**GB/T 32907-2016（SM4）**、**GB/T 32918-2016（SM2）** 与 **RFC 8998（SM4-GCM）**。  
-> 一套零 FFI 纯 MoonBit 代码原生运行于 **WebAssembly (Wasm) / JavaScript (JS) / Native (MSVC/GCC)** 三端，**175 项全量测试零警告通过**，并通过 **OpenSSL 3.5.6 实时双向 8/8 跨语言字节级对拍**、**真实 OS TCP Socket 端到端闭环** 与 **`examples/consumer` 已发布包外部消费验证**。
+> 一套零 FFI、零外部依赖纯 MoonBit 代码原生运行于 **WebAssembly (Wasm) / JavaScript (JS) / Native (MSVC/GCC)** 三端，**175 项核心全量测试零警告通过**，并通过 **OpenSSL 3.5.6 实时双向 8/8 跨语言字节级对拍**、**原生 `moonbitlang/async/socket` 并发 TLCP 1.1 反向代理（`examples/tlcp_async_proxy/`，5/5 Native TCP 闭环）**、**Node.js 真实 OS TCP Socket 端到端闭环** 与 **`examples/consumer` 已发布包外部消费验证（4/4）**。
 
 - **在线零安装交互实验室（GitHub Pages）**：<https://coolrfuldarkness.github.io/moontlcp/>（浏览器内实时运行纯 MoonBit 编译的 TLCP 1.1 双证书握手显微镜、红队篡改攻防、Session ID 带宽对比与 SM9 邮箱即公钥交互台）
 - **mooncakes.io 安装**：
@@ -45,14 +45,23 @@ moon build web_api --target js --release
 node examples/web-demo/smoke.mjs
 ```
 
-### 2. 真实 OS TCP Socket 端到端 TLCP 1.1 通信演示（零 npm 依赖）
+### 2. 原生 MoonBit 并发异步 TLCP 1.1 反向代理（`examples/tlcp_async_proxy/`）
+```bash
+cd examples/tlcp_async_proxy
+moon update
+moon test --target native -d          # Windows 下需先加载 VS MSVC vcvars64.bat
+moon run --target native cmd/main
+```
+独立子模块（不向核心库引入任何外部依赖），基于 `moonbitlang/async/socket`（`TcpServer` / `Tcp`）与 `@async.with_task_group` 在真实 OS `127.0.0.1` 回路上完整演示：PEM 双证书加载与顺序防篡改、`ECC_SM4_GCM_SM3` 并发握手 + `SessionStore` Session ID 简短复用、`ECDHE_SM4_CBC_SM3` / `ECDHE_SM4_GCM_SM3` mTLCP 双向认证、加密 HTTP 请求向明文后端实时转发、>32KB 自动分片以及密文篡改（`BadRecordMac`）与 TLS 1.2 降级（`ProtocolVersion`）Fail-Closed 断连与优雅停机。
+
+### 3. 真实 OS TCP Socket 端到端 TLCP 1.1 通信演示（Node.js 零 npm 依赖）
 ```bash
 moon build web_api --target js --release
 node examples/tlcp-tcp-demo/tlcp_tcp_demo.mjs
 ```
 使用 Node.js 内置 `node:net` 在 `127.0.0.1` 真实 OS TCP 回路上分别跑通 **`ECC_SM4_GCM_SM3`** 与 **`ECDHE_SM4_CBC_SM3`（mTLCP 双向认证）** 完整双证书握手与双向加密报文传输。
 
-### 3. 运行 6 阶段端到端 CLI 实景演示（TLCP 1.1 + SM9）
+### 4. 运行 6 阶段端到端 CLI 实景演示（TLCP 1.1 + SM9）
 ```bash
 moon run --target wasm cmd/main
 ```
@@ -64,16 +73,16 @@ moon run --target wasm cmd/main
 5. TLCP 实时安全对抗演练（GCM Tag 翻转 → `BadRecordMac` + Fatal Alert；TLS 1.2 `0x0303` 降级 → `ProtocolVersion` + Fatal Alert）；
 6. **GB/T 38635-2020 SM9 BN256 IBC 全流程实景演练**（基于共享 SM3/SM4/CT 核心：KGC 密钥派生 + 双线性对 + SM9 签验与篡改拦截 + KEM/PKE `KdfXor` & `Sm4EcbPkcs7` 加解密 + SM9 密钥交换双向确认）。
 
-### 4. 运行全量三端测试（175/175 通过，0 警告）与外部消费端验证
+### 5. 运行全量三端测试（175/175 通过，0 警告）与外部消费端验证
 ```bash
 moon test --target wasm -d
 moon test --target js -d
 moon test --target native -d   # Windows 下需先加载 VS MSVC vcvars64.bat
-# 独立验证 mooncakes.io 已发布包消费：
+# 独立验证 mooncakes.io 已发布包消费（含 inspect_record / inspect_handshake 无状态解剖冒烟测试）：
 cd examples/consumer && moon update && moon test --target wasm -d && moon test --target js -d
 ```
 
-### 5. 运行 OpenSSL 3.5.6 ⇄ MoonTLCP 实时双向跨语言对拍
+### 6. 运行 OpenSSL 3.5.6 ⇄ MoonTLCP 实时双向跨语言对拍
 ```bash
 python harness/interop_openssl.py
 ```
@@ -81,7 +90,7 @@ python harness/interop_openssl.py
 - **MoonTLCP → OpenSSL 3.5.6（6/6 PASS）**：SM3 哈希、SM4-CBC-PKCS7、SM4-CTR、SM2 DER 签名验签（`distid:1234567812345678`）、SM2 ASN.1 `SM2Cipher` 解密、以及 MoonTLCP 签发的 Root CA / 签名证书 / 加密证书三张 X.509 v3 DER 证书经 `openssl x509` 规范重编码逐字节一致且密码学验签通过。
 - **OpenSSL 3.5.6 → MoonTLCP（2/2 PASS）**：实时生成随机 SM3/SM4/SM2 向量与全新 OpenSSL SM2 双证书链，在 Wasm 与 JS 双端由 MoonTLCP 解析并验签 100% 通过。
 
-### 6. 代码调用示例
+### 7. 代码调用示例
 
 #### TLCP 1.1 Sans-I/O 内存通道握手
 ```moonbit nocheck
@@ -130,7 +139,7 @@ let pt = @sm9.decrypt(b"Bob", de_bob, ct, mode=@sm9_enc.EncMode::Sm4EcbPkcs7).un
 - **诚实边界与非目标（Non-Goals & Limitations）**：
   1. **JIT / Wasm / JS 恒定时间边界**：本库在源码与算法层通过 `crypto/ct` 无分支操作、固定窗口标量乘和 SM3 压缩块对齐消除逻辑侧信道，但 Wasm/JS JIT 编译器重排与底层 CPU 微架构侧信道（如 Flush+Reload / Spectre）无法由高级语言源码绝对免疫；对抗本地共置微架构攻击的高敏场景建议使用 Native 目标并在隔离安全域或 HSM/SDF 内运行。
   2. **调用方注入 CSPRNG 熵源**：核心库保持零 FFI 与确定性可测性，生产部署**必须**由宿主注入操作系统 CSPRNG 高熵 `seed` / `entropy`（SM9 强制 ≥32B）。
-  3. **明确不包含**：DTLCP（UDP）、异步 Socket 运行时绑定（由宿主接入，参见 `examples/tlcp-tcp-demo/`）、PKCS#11/SKF/SDF 硬件驱动、在线 CRL/OCSP 与 OS 时钟读取、会话重协商及 ZUC 套件。
+  3. **明确不包含**：DTLCP（UDP）、核心库内置异步 Socket 运行时绑定（核心库严格零外部依赖，原生异步代理参见独立子模块 `examples/tlcp_async_proxy/`，Node.js ESM 桥接参见 `examples/tlcp-tcp-demo/`）、PKCS#11/SKF/SDF 硬件驱动、在线 CRL/OCSP 与 OS 时钟读取、会话重协商及 ZUC 套件。
 
 ---
 
@@ -187,8 +196,10 @@ moontlcp/
 ├── state/                      # Sans-I/O ClientConn / ServerConn 状态机 + 26 项独立安全对抗测试
 ├── web_api/                    # 零依赖 JS ESM / Wasm / Native 交互实验与 TCP 桥接导出包
 ├── examples/
+│   ├── tlcp_async_proxy/       # 独立 Native 并发异步 TLCP 1.1 反向代理（moonbitlang/async/socket）
+│   ├── consumer/               # 独立 mooncakes.io 已发布包外部消费冒烟测试（含无状态线格式解剖）
 │   ├── web-demo/               # 浏览器零安装交互实验室（index.html + Node smoke.mjs）
-│   └── tlcp-tcp-demo/          # 真实 OS TCP Socket 端到端 TLCP 1.1 通信演示（零 npm 依赖）
+│   └── tlcp-tcp-demo/          # 真实 OS TCP Socket 端到端 TLCP 1.1 通信演示（Node.js 零 npm 依赖）
 ├── cmd/main/                   # 6 阶段一键可运行实景演示 CLI（TLCP 1.1 + SM9）
 ├── bench/                      # 23 项跨后端统一性能基准套件 (moon bench)
 ├── harness/                    # OpenSSL 3.5.6 ⇄ MoonTLCP 实时双向跨语言对拍 Harness
@@ -198,13 +209,15 @@ moontlcp/
     ├── ARCHITECTURE.md         # 统一分层架构、TLCP + SM9 标准覆盖矩阵与共享原语去重说明
     ├── VERIFICATION_LOG.md     # 五层验证闭环、三端回归实测与研发抓虫实录
     ├── SECURITY_AUDIT.md       # P0/P1 安全审计缺陷修复清单与威胁模型
-    └── DEFENSE_QA.md           # 决赛评委白板硬核问答速查表
+    ├── DEFENSE_QA.md           # 决赛评委白板硬核问答速查表
+    └── ROADMAP.md              # 面向未来的演进路线图（v0.4.0 → v1.0.0+）
 ```
 
 - 统一分层架构与国标条款覆盖矩阵：[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - 五层验证闭环与研发抓虫实录：[`docs/VERIFICATION_LOG.md`](docs/VERIFICATION_LOG.md)
 - 安全审计与对抗加固报告：[`docs/SECURITY_AUDIT.md`](docs/SECURITY_AUDIT.md)
 - 决赛评委白板问答速查表：[`docs/DEFENSE_QA.md`](docs/DEFENSE_QA.md)
+- 前瞻开发路线图（`v0.4.0 → v1.0.0+`）：[`docs/ROADMAP.md`](docs/ROADMAP.md)
 - 第三方合规与标准向量声明：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
 
 ---

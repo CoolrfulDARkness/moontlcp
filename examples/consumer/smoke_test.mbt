@@ -93,3 +93,68 @@ test "published SM9 BN256 KGC key extraction and Sign/Verify round-trip" {
     !@sm9.verify(sign_master.public_key(), user_id[:], b"forged"[:], sig),
   )
 }
+
+///|
+test "published stateless wire dissectors inspect_record and inspect_handshake" {
+  let pki = @moontlcp.generate_test_pki(b"consumer-inspect-seed")
+  let client = @moontlcp.new_client({
+    trust_anchors: [pki.ca_cert],
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    client_certs: None,
+    resume_session: None,
+    seed: b"consumer-inspect-c",
+  })
+  let server = @moontlcp.new_server({
+    sign_cert: pki.server_sign_cert,
+    sign_priv: pki.server_sign_priv,
+    enc_cert: pki.server_enc_cert,
+    enc_priv: pki.server_enc_priv,
+    cipher_suites: [@handshake.EccSm4GcmSm3],
+    require_client_cert: false,
+    client_trust_anchors: [],
+    session_store: None,
+    seed: b"consumer-inspect-s",
+  })
+  // Flight 1: ClientHello via inspect_record + inspect_handshake
+  let flight1 = client.start_handshake()
+  let rec1 = @moontlcp.inspect_record(flight1[:])
+  assert_eq(rec1.content_type_name, "Handshake")
+  assert_eq(rec1.is_tlcp_1_1, true)
+  let ch_payload = flight1[rec1.payload_offset:rec1.payload_offset +
+    rec1.payload_len]
+  let ch = @moontlcp.inspect_handshake(ch_payload)
+  assert_eq(ch.msg_type_name, "ClientHello")
+  assert_eq(ch.protocol_version, 0x0101U)
+  assert_eq(ch.cipher_suites, [0xE053U])
+  // Flight 2: ServerHello + dual Certificate stream via inspect_record_stream
+  ignore(server.feed(flight1[:]))
+  let flight2 = server.take_outbound()
+  let f2_recs = @moontlcp.inspect_record_stream(flight2[:])
+  assert_true(f2_recs.length() >= 4)
+  let mut saw_server_hello = false
+  let mut saw_dual_cert = false
+  for r in f2_recs {
+    assert_eq(r.content_type_name, "Handshake")
+    assert_eq(r.is_tlcp_1_1, true)
+    let payload = flight2[r.payload_offset:r.payload_offset + r.payload_len]
+    let mut off = 0
+    while off < payload.length() {
+      let hs = @moontlcp.inspect_handshake(payload[off:])
+      if hs.msg_type_name == "ServerHello" {
+        assert_eq(hs.selected_suite, Some(0xE053U))
+        saw_server_hello = true
+      }
+      if hs.msg_type_name == "Certificate" {
+        assert_eq(hs.cert_count, 2)
+        saw_dual_cert = true
+      }
+      off = off + hs.total_wire_len
+    }
+  }
+  assert_true(saw_server_hello && saw_dual_cert)
+  // Stateless alert inspection
+  let (lvl, desc, name) = @moontlcp.inspect_alert(b"\x02\x46"[:])
+  assert_eq(lvl, b'\x02')
+  assert_eq(desc, b'\x46')
+  assert_eq(name, "ProtocolVersion")
+}

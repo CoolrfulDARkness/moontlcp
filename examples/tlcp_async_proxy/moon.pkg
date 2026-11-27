@@ -1,0 +1,12 @@
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/socket",
+  "moonbitlang/core/encoding/utf8",
+  "CoolrfulDARkness/moontlcp",
+  "CoolrfulDARkness/moontlcp/crypto/sm2",
+  "CoolrfulDARkness/moontlcp/handshake",
+  "CoolrfulDARkness/moontlcp/state",
+  "CoolrfulDARkness/moontlcp/x509",
+}
+
+supported_targets = "+native"

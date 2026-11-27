@@ -1,5 +1,6 @@
 import {
   "CoolrfulDARkness/moontlcp",
+  "CoolrfulDARkness/moontlcp/handshake",
   "CoolrfulDARkness/moontlcp/state",
   "CoolrfulDARkness/moontlcp/sm9",
 } for "test"
